@@ -18,9 +18,16 @@ data = {
         "open_url_with_js": True,
         "always_display": False,
         "show_btn_on_thumb": True,
+        "base_url": "",
         "proxy": "",
     },
     "tool":{
+        "aria2rpc": {
+            "enable": False,
+            "host": "localhost",
+            "port": 6800,
+            "secret": ""
+        }
     }
 }
 
@@ -70,8 +77,21 @@ def load():
     if not json_data:
         util.printD("load setting file failed")
         return
+    
+    data = json_data
 
-    data = {**json_data, **data}
+    # check for new key
+    if "always_display" not in data["general"].keys():
+        data["general"]["always_display"] = False
+
+    if "show_btn_on_thumb" not in data["general"].keys():
+        data["general"]["show_btn_on_thumb"] = True
+
+    if "proxy" not in data["general"].keys():
+        data["general"]["proxy"] = ""
+
+
+    return
 
 
 # save setting from parameter
@@ -86,6 +106,7 @@ def save_from_input(max_size_preview, skip_nsfw_preview, open_url_with_js, alway
             "open_url_with_js": open_url_with_js,
             "always_display": always_display,
             "show_btn_on_thumb": show_btn_on_thumb,
+            "base_url": base_url,
             "proxy": proxy,
         },
         "tool":{

@@ -23,8 +23,8 @@ model_type_dict = {
     "TextualInversion": "ti",
     "Hypernetwork": "hyper",
     "LORA": "lora",
-    "LoCon": "lora",
-    "Poses": "lycoris",
+    "LoCon": "lycoris",
+    "Poses": "lora",
 }
 
 
@@ -82,6 +82,7 @@ def get_model_info_by_id(id:str) -> dict:
         util.printD("id is empty")
         return
 
+    util.printD(setting.data["general"]["base_url"])
     r = requests.get(get_url_from_base_url(url_dict["modelId"]+str(id)), headers=util.def_headers, proxies=util.proxies)
     if not r.ok:
         if r.status_code == 404:
