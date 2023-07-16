@@ -260,6 +260,7 @@ def get_model_info_by_url(model_url_or_id:str) -> tuple:
     folder = model.folders[model_type]
     # get subfolders
     subfolders = util.get_subfolders(folder)
+    subfolders = [i.capitalize() for i in model_info["tags"]] + subfolders
     if not subfolders:
         subfolders = []
 
@@ -380,7 +381,7 @@ def get_id_and_dl_url_by_version_str(version_str:str, model_info:dict) -> tuple:
 
 # download model from civitai by input
 # output to markdown log
-def dl_model_by_input(model_info:dict, model_type:str, subfolder_str:str, version_str:str, dl_all_bool:bool, max_size_preview:bool, skip_nsfw_preview:bool) -> str:
+def dl_model_by_input(model_info:dict, model_type:str, subfolder_str:str, version_str:str, files:list, dl_all_bool:bool, max_size_preview:bool, skip_nsfw_preview:bool) -> str:
 
     output = ""
 
@@ -463,7 +464,7 @@ def dl_model_by_input(model_info:dict, model_type:str, subfolder_str:str, versio
         # download
         filepath = ""
         for url in download_urls:
-            model_filepath = downloader.dl(url, model_folder, None, None)
+            model_filepath = downloader.dl(url, model_folder)
             if not model_filepath:
                 output = "Downloading failed, check console log for detail"
                 util.printD(output)
@@ -472,21 +473,42 @@ def dl_model_by_input(model_info:dict, model_type:str, subfolder_str:str, versio
             if url == ver_info["downloadUrl"]:
                 filepath = model_filepath
     else:
-        # only download one file
-        # get download url
-        url = ver_info["downloadUrl"]
-        if not url:
-            output = "Fail to get download url, check console log for detail"
-            util.printD(output)
-            return output
-        
-        # download
-        filepath = downloader.dl(url, model_folder, None, None)
-        if not filepath:
-            output = "Downloading failed, check console log for detail"
-            util.printD(output)
-            return output
+        if files:
+            download_urls = get_download_url_by_file_strs(files, ver_info)
 
+            # check if this model is already existed
+            r = civitai.search_local_model_info_by_version_id(model_folder, version_id)
+            if r:
+                output = "This model version is already existed"
+                util.printD(output)
+                return output
+
+            # download
+            filepath = ""
+            for url in download_urls:
+                model_filepath = downloader.dl(url, model_folder)
+                if not model_filepath:
+                    output = "Downloading failed, check console log for detail"
+                    util.printD(output)
+                    return output
+
+                if url == ver_info["downloadUrl"]:
+                    filepath = model_filepath
+        else:
+            # only download one file
+            # get download url
+            url = ver_info["downloadUrl"]
+            if not url:
+                output = "Fail to get download url, check console log for detail"
+                util.printD(output)
+                return output
+
+            # download
+            filepath = downloader.dl(url, model_folder)
+            if not filepath:
+                output = "Downloading failed, check console log for detail"
+                util.printD(output)
+                return output
 
     if not filepath:
         filepath = model_filepath
@@ -509,3 +531,65 @@ def dl_model_by_input(model_info:dict, model_type:str, subfolder_str:str, versio
     output = "Done. Model downloaded to: " + filepath
     util.printD(output)
     return output
+
+
+# get file strs by version string
+def get_file_strs_by_version_str(version_str: str, model_info: dict) -> dict:
+    version_info = get_ver_info_by_ver_str(version_str, model_info)
+
+    # get files list
+    if "files" not in version_info.keys():
+        util.printD("files is not in version_info")
+        return
+
+    files = version_info["files"]
+    if not files:
+        util.printD("files is Empty")
+        return
+
+    # find version by version_str
+    file_strs = []
+    for file in files:
+        # version name can not be used as id
+        # version id is not readable
+        # so , we use name_id as version string
+        file_str = file["name"] + "_" + str(file["id"])
+        file_strs.append(file_str)
+
+    return file_strs
+
+
+# get file list by file strings
+def get_download_url_by_file_strs(file_strs: str, ver_info: dict) -> dict:
+    if not file_strs:
+        util.printD("file_strs is empty")
+        return
+
+    if not ver_info:
+        util.printD("version_info is None")
+        return
+
+    # get file list
+    if "files" not in ver_info.keys():
+        util.printD("files is not in model_info")
+        return
+
+    files = ver_info["files"]
+    if not files:
+        util.printD("files is Empty")
+        return
+
+    # find version by version_str
+    download_urls = []
+    for file in files:
+        # version name can not be used as id
+        # version id is not readable
+        # so , we use name_id as version string
+        file_s = file["name"] + "_" + str(file["id"])
+        for file_str in file_strs:
+            if file_s == file_str:
+                # find version
+                download_urls.append(file["downloadUrl"])
+
+    return download_urls
+

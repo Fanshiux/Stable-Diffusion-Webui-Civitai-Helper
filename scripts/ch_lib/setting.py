@@ -87,7 +87,7 @@ def load():
     return
 
 # save setting from parameter
-def save_from_input(max_size_preview, skip_nsfw_preview, open_url_with_js, always_display, show_btn_on_thumb, proxy):
+def save_from_input(max_size_preview, skip_nsfw_preview, open_url_with_js, always_display, show_btn_on_thumb, proxy, base_url, aria2rpc_enable, aria2rpc_host, aria2rpc_port, aria2rpc_secret):
     global data
     data = {
         "model":{
@@ -101,6 +101,12 @@ def save_from_input(max_size_preview, skip_nsfw_preview, open_url_with_js, alway
             "proxy": proxy,
         },
         "tool":{
+            "aria2rpc": {
+                "enable": aria2rpc_enable,
+                "host": aria2rpc_host,
+                "port": aria2rpc_port,
+                "secret": aria2rpc_secret
+            }
         }
     }
 

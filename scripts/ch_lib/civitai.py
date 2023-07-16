@@ -24,6 +24,7 @@ model_type_dict = {
     "Hypernetwork": "hyper",
     "LORA": "lora",
     "LoCon": "lora",
+    "Poses": "lycoris",
 }
 
 
@@ -81,7 +82,7 @@ def get_model_info_by_id(id:str) -> dict:
         util.printD("id is empty")
         return
 
-    r = requests.get(url_dict["modelId"]+str(id), headers=util.def_headers, proxies=util.proxies)
+    r = requests.get(get_url_from_base_url(url_dict["modelId"]+str(id)), headers=util.def_headers, proxies=util.proxies)
     if not r.ok:
         if r.status_code == 404:
             # this is not a civitai model
@@ -117,7 +118,7 @@ def get_version_info_by_version_id(id:str) -> dict:
         util.printD("id is empty")
         return
 
-    r = requests.get(url_dict["modelVersionId"]+str(id), headers=util.def_headers, proxies=util.proxies)
+    r = requests.get(get_url_from_base_url(url_dict["modelVersionId"]+str(id)), headers=util.def_headers, proxies=util.proxies)
     if not r.ok:
         if r.status_code == 404:
             # this is not a civitai model
@@ -356,7 +357,7 @@ def get_preview_image_by_model_path(model_path:str, max_size_preview, skip_nsfw_
                                     if img_dict["width"]:
                                         img_url = get_full_size_image_url(img_url, img_dict["width"])
 
-                            util.download_file(img_url, sec_preview)
+                            util.download_file(get_url_from_base_url(img_url), sec_preview)
                             # we only need 1 preview image
                             break
 
@@ -609,4 +610,10 @@ def check_models_new_version_by_model_types(model_types:list, delay:float=1) -> 
     return new_versions
 
 
+def get_url_from_base_url(url):
+    base_url = setting.data["general"]["base_url"]
+    if base_url:
+        return base_url if base_url[-1] == "/" else base_url + "/" + url
+    else:
+        return url
 
