@@ -131,7 +131,7 @@ def on_ui_tabs():
                     model_name_drop = gr.Dropdown(choices=no_info_model_names, label="Model", value="ckp",
                                                   multiselect=False)
 
-                model_url_or_id_txtbox = gr.Textbox(label="Civitai URL", lines=1, value="")
+                model_url_or_id_txtbox = gr.Textbox(label="Civitai URL", lines=1)
                 get_civitai_model_info_by_id_btn = gr.Button(value="Get Model Info from Civitai", variant="primary")
                 get_model_by_id_log_md = gr.Markdown("")
 
@@ -139,17 +139,15 @@ def on_ui_tabs():
             with gr.Column():
                 gr.Markdown("### Download Model")
                 with gr.Row():
-                    dl_model_url_or_id_txtbox = gr.Textbox(placeholder="Civitai URL", lines=1, value="")
+                    dl_model_url_or_id_txtbox = gr.Textbox(placeholder="Civitai URL", lines=1, show_label=False)
                     dl_model_info_btn = gr.Button(value="1. Get Model Info by Civitai Url", variant="primary")
 
                 gr.Markdown(value="2. Pick Subfolder and Model Version")
                 with gr.Row():
-                    dl_model_name_txtbox = gr.Textbox(label="Model Name", interactive=False, lines=1, value="")
-                    dl_model_type_txtbox = gr.Textbox(label="Model Type", interactive=False, lines=1, value="")
-                    dl_subfolder_drop = gr.Dropdown(choices=[], label="Sub-folder", value="", interactive=True,
-                                                    multiselect=False)
-                    dl_version_drop = gr.Dropdown(choices=[], label="Model Version", value="", interactive=True,
-                                                  multiselect=False)
+                    dl_model_name_txtbox = gr.Textbox(label="Model Name", interactive=False, lines=1)
+                    dl_model_type_txtbox = gr.Textbox(label="Model Type", interactive=False, lines=1)
+                    dl_subfolder_drop = gr.Dropdown(choices=[], label="Sub-folder", interactive=True, multiselect=False)
+                    dl_version_drop = gr.Dropdown(choices=[], label="Model Version", interactive=True, multiselect=False)
                     dl_files_drop = gr.Dropdown(choices=[], label="Files", interactive=True, multiselect=True)
 
                 dl_civitai_model_by_id_btn = gr.Button(value="3. Download Model", variant="primary")
@@ -192,16 +190,14 @@ def on_ui_tabs():
                     aria2rpc_secret = gr.Textbox(label="Secret", interactive=True, lines=1, value=aria2rpc["secret"])
 
                 save_setting_btn = gr.Button(value="Save Setting")
-                general_log_md = gr.Markdown(value="")
+                general_log_md = gr.Markdown()
 
         # ====Footer====
         gr.Markdown(f"<center>version:{util.version}</center>")
 
         # ====hidden component for js, not in any tab====
-        js_msg_txtbox = gr.Textbox(label="Request Msg From Js", visible=False, lines=1, value="",
-                                   elem_id="ch_js_msg_txtbox")
-        py_msg_txtbox = gr.Textbox(label="Response Msg From Python", visible=False, lines=1, value="",
-                                   elem_id="ch_py_msg_txtbox")
+        js_msg_txtbox = gr.Textbox(label="Request Msg From Js", visible=False, lines=1, elem_id="ch_js_msg_txtbox")
+        py_msg_txtbox = gr.Textbox(label="Response Msg From Python", visible=False, lines=1, elem_id="ch_py_msg_txtbox")
 
         js_open_url_btn = gr.Button(value="Open Model Url", visible=False, elem_id="ch_js_open_url_btn")
         js_add_trigger_words_btn = gr.Button(value="Add Trigger Words", visible=False,
