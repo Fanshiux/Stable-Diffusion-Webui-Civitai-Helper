@@ -61,10 +61,14 @@ def dl(url, folder, filename=None, filepath=None):
             params["method"] = "aria2.tellStatus"
             while True:
                 try:
-                    result = requests.post(aria2rpc_url, json=params).json()["result"]
+                    print()
+                    request = requests.post(aria2rpc_url, json=params).json()
+                    if "error" in request:
+                        util.printD("Download closed")
+                        return
+                    result = request["result"]
                     total_size = int(result["totalLength"])
                     downloaded_size = int(result["completedLength"])
-                    print()
                     if 0 < total_size == downloaded_size:
                         file_path = result["files"][0]["path"]
                         break
@@ -72,9 +76,7 @@ def dl(url, folder, filename=None, filepath=None):
                     # progress
                     progress = int(50 * downloaded_size / total_size)
                     sys.stdout.reconfigure(encoding='utf-8')
-                    sys.stdout.write(
-                        "\r[%s%s] %d%%\t%d MB" % ('-' * progress, ' ' * (50 - progress), 100 * downloaded_size / total_size,
-                                              download_speed))
+                    sys.stdout.write("\r[%s%s] %d%%\t%d MB" % ('-' * progress, ' ' * (50 - progress), 100 * downloaded_size / total_size, download_speed))
                     sys.stdout.flush()
                     time.sleep(1)
                 except Exception:
@@ -85,7 +87,6 @@ def dl(url, folder, filename=None, filepath=None):
         # first request for header
         rh = requests.get(url, stream=True, verify=False, headers=util.def_headers, proxies=util.proxies)
         # get file size
-        total_size = 0
         total_size = int(rh.headers['Content-Length'])
         util.printD(f"File size: {total_size}")
 

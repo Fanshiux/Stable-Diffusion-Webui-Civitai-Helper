@@ -1,10 +1,9 @@
 # -*- coding: UTF-8 -*-
 # handle msg between js and python side
-import os
 import json
-from . import util
+import os
 from modules import shared
-
+from . import util
 
 # this is the default root path
 root_path = os.getcwd()
@@ -25,7 +24,7 @@ info_ext = ".info"
 vae_suffix = ".vae"
 
 
-# get cusomter model path
+# get customer model path
 def get_custom_model_folder():
     util.printD("Get Custom Model Folder")
 
@@ -56,7 +55,6 @@ def write_model_info(path, model_info):
 
 def load_model_info(path):
     # util.printD("Load model info from file: " + path)
-    model_info = None
     with open(os.path.realpath(path), 'r') as f:
         try:
             model_info = json.load(f)
@@ -64,15 +62,14 @@ def load_model_info(path):
             util.printD("Selected file is not json: " + path)
             util.printD(e)
             return
-        
+
     return model_info
 
 
 # get model file names by model type
 # parameter: model_type - string
 # return: model name list
-def get_model_names_by_type(model_type:str) -> list:
-    
+def get_model_names_by_type(model_type: str) -> list:
     model_folder = folders[model_type]
 
     # get information from filter
@@ -87,35 +84,49 @@ def get_model_names_by_type(model_type:str) -> list:
                 # find a model
                 model_names.append(filename)
 
-
     return model_names
 
 
 # return 2 values: (model_root, model_path)
-def get_model_path_by_type_and_name(model_type:str, model_name:str) -> str:
+def get_model_path_by_type_and_name(model_type: str, model_name: str) -> str:
     util.printD("Run get_model_path_by_type_and_name")
     if model_type not in folders.keys():
         util.printD("unknown model_type: " + model_type)
         return
-    
+
     if not model_name:
         util.printD("model name can not be empty")
         return
-    
+
     folder = folders[model_type]
 
     # model could be in subfolder, need to walk.
-    model_root = ""
-    model_path = ""
     for root, dirs, files in os.walk(folder, followlinks=True):
         for filename in files:
             if filename == model_name:
                 # find model
                 model_root = root
                 model_path = os.path.join(root, filename)
-                return (model_root, model_path)
+                return model_root, model_path
 
     return
 
 
+# Enter multiple file names and directories to determine if there are duplicate files
+# return True if there are duplicate files
+def check_duplicate_files(file_name: str, file_dir: str) -> bool:
+    util.printD("Run check_duplicate_files")
+    if not file_name:
+        util.printD("file name can not be empty")
+        return False
 
+    if not file_dir:
+        util.printD("file dir can not be empty")
+        return False
+
+    # check if file_name is in file_dir
+    if file_name in os.listdir(file_dir):
+        util.printD("file_name is in file_dir")
+        return True
+
+    return False

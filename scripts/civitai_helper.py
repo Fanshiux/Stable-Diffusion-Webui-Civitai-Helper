@@ -3,25 +3,18 @@
 # repo: https://github.com/butaixianran/
 
 
-import modules.scripts as scripts
-import gradio as gr
-import os
-import webbrowser
-import requests
-import random
-import hashlib
-import json
-import shutil
-import re
-import modules
-from modules import script_callbacks
-from modules import shared
-from scripts.ch_lib import model
+from scripts.ch_lib import civitai
 from scripts.ch_lib import js_action_civitai
+from scripts.ch_lib import model
 from scripts.ch_lib import model_action_civitai
 from scripts.ch_lib import setting
-from scripts.ch_lib import civitai
 from scripts.ch_lib import util
+
+import gradio as gr
+import modules
+import modules.scripts as scripts
+import os
+from modules import script_callbacks
 
 # init
 
@@ -81,6 +74,23 @@ def on_ui_tabs():
     def get_files_by_version_str(version_str, model_info):
         file_strs = model_action_civitai.get_file_strs_by_version_str(version_str, model_info)
         return dl_files_drop.update(choices=file_strs, value=[file_strs[0]] if len(file_strs) == 1 else [])
+
+    def check_duplicate_files(file_strs, file_dir, model_type, model_info):
+        if not file_dir:
+            return None, None
+        file_names = util.get_file_names_from_file_strs(file_strs)
+        if file_dir == "/" or file_dir == "\\":
+            subfolder = ""
+        elif file_dir[:1] == "/" or file_dir[:1] == "\\":
+            subfolder = file_dir[1:]
+        else:
+            subfolder = file_dir
+        file_dir = os.path.join(model.folders[model_type], subfolder)
+        for file_name in file_names:
+            if model.check_duplicate_files(file_name, file_dir):
+                file_suffix = dl_file_suffix_txtbox.update(model_info["creator"]["username"])
+                return "文件名重复，请输入文件名后缀，否则会直接替换", file_suffix
+        return None, None
 
     # ====UI====
     with gr.Blocks(analytics_enabled=False) as civitai_helper:
@@ -146,9 +156,11 @@ def on_ui_tabs():
                 with gr.Row():
                     dl_model_name_txtbox = gr.Textbox(label="Model Name", interactive=False, lines=1)
                     dl_model_type_txtbox = gr.Textbox(label="Model Type", interactive=False, lines=1)
-                    dl_subfolder_drop = gr.Dropdown(choices=[], label="Sub-folder", interactive=True, multiselect=False)
-                    dl_version_drop = gr.Dropdown(choices=[], label="Model Version", interactive=True, multiselect=False)
+                    dl_version_drop = gr.Dropdown(choices=[], label="Model Version", interactive=True,
+                                                  multiselect=False)
                     dl_files_drop = gr.Dropdown(choices=[], label="Files", interactive=True, multiselect=True)
+                    dl_subfolder_drop = gr.Dropdown(choices=[], label="Sub-folder", interactive=True, multiselect=False)
+                    dl_file_suffix_txtbox = gr.Textbox(label="File Suffix", interactive=True, lines=1)
 
                 dl_civitai_model_by_id_btn = gr.Button(value="3. Download Model", variant="primary")
                 dl_log_md = gr.Markdown(value="Check Console log for Downloading Status")
@@ -227,14 +239,22 @@ def on_ui_tabs():
         # Download Model
         dl_version_drop.change(get_files_by_version_str, inputs=[dl_version_drop, dl_model_info],
                                outputs=[dl_files_drop])
+        dl_subfolder_drop.change(check_duplicate_files,
+                                 inputs=[dl_files_drop, dl_subfolder_drop, dl_model_type_txtbox, dl_model_info],
+                                 outputs=[dl_log_md, dl_file_suffix_txtbox])
+        dl_files_drop.change(check_duplicate_files,
+                             inputs=[dl_files_drop, dl_subfolder_drop, dl_model_type_txtbox, dl_model_info],
+                             outputs=[dl_log_md, dl_file_suffix_txtbox])
 
         dl_model_info_btn.click(get_model_info_by_url, inputs=dl_model_url_or_id_txtbox,
                                 outputs=[dl_model_info, dl_model_name_txtbox, dl_model_type_txtbox, dl_subfolder_drop,
                                          dl_version_drop])
         dl_civitai_model_by_id_btn.click(model_action_civitai.dl_model_by_input,
                                          inputs=[dl_model_info, dl_model_type_txtbox, dl_subfolder_drop,
-                                                 dl_version_drop, dl_files_drop, dl_all_ckb, max_size_preview_ckb,
-                                                 skip_nsfw_preview_ckb], outputs=dl_log_md)
+                                                 dl_version_drop, dl_files_drop, dl_file_suffix_txtbox, dl_all_ckb,
+                                                 max_size_preview_ckb,
+                                                 skip_nsfw_preview_ckb],
+                                         outputs=dl_log_md)
 
         # Check models' new version
         check_models_new_version_btn.click(model_action_civitai.check_models_new_version_to_md, inputs=model_types_ckbg,

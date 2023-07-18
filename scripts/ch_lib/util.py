@@ -5,11 +5,10 @@ import hashlib
 import requests
 import shutil
 
-
 version = "1.6.4"
 
-def_headers = {'User-Agent': 'Mozilla/5.0 (iPad; CPU OS 12_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148'}
-
+def_headers = {
+    'User-Agent': 'Mozilla/5.0 (iPad; CPU OS 12_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148'}
 
 proxies = None
 
@@ -27,10 +26,11 @@ def read_chunks(file, size=io.DEFAULT_BUFFER_SIZE):
             break
         yield chunk
 
+
 # Now, hashing use the same way as pip's source code.
 def gen_file_sha256(filname):
     printD("Use Memory Optimized SHA256")
-    blocksize=1 << 20
+    blocksize = 1 << 20
     h = hashlib.sha256()
     length = 0
     with open(os.path.realpath(filname), 'rb') as f:
@@ -38,11 +38,10 @@ def gen_file_sha256(filname):
             length += len(block)
             h.update(block)
 
-    hash_value =  h.hexdigest()
+    hash_value = h.hexdigest()
     printD("sha256: " + hash_value)
     printD("length: " + str(length))
     return hash_value
-
 
 
 # get preview image
@@ -54,7 +53,7 @@ def download_file(url, path):
         printD("Get error code: " + str(r.status_code))
         printD(r.text)
         return
-    
+
     # write to file
     with open(os.path.realpath(path), 'wb') as f:
         r.raw.decode_content = True
@@ -62,17 +61,18 @@ def download_file(url, path):
 
     printD("File downloaded to: " + path)
 
+
 # get subfolder list
-def get_subfolders(folder:str) -> list:
+def get_subfolders(folder: str) -> list:
     printD("Get subfolder for: " + folder)
     if not folder:
         printD("folder can not be None")
         return
-    
+
     if not os.path.isdir(folder):
         printD("path is not a folder")
         return
-    
+
     prefix_len = len(folder)
     subfolders = []
     for root, dirs, files in os.walk(folder, followlinks=True):
@@ -86,7 +86,7 @@ def get_subfolders(folder:str) -> list:
 
 
 # get relative path
-def get_relative_path(item_path:str, parent_path:str) -> str:
+def get_relative_path(item_path: str, parent_path: str) -> str:
     # printD("item_path:"+item_path)
     # printD("parent_path:"+parent_path)
     # item path must start with parent_path
@@ -103,3 +103,9 @@ def get_relative_path(item_path:str, parent_path:str) -> str:
 
     # printD("relative:"+relative)
     return relative
+
+
+# Get file_name from file_strs
+def get_file_names_from_file_strs(file_strs: list) -> str:
+    return [file_str.split("_")[0] for file_str in file_strs]
+
