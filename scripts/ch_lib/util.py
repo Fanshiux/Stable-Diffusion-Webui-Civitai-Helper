@@ -107,5 +107,5 @@ def get_relative_path(item_path: str, parent_path: str) -> str:
 
 # Get file_name from file_strs
 def get_file_names_from_file_strs(file_strs: list) -> str:
-    return [file_str.split("_")[0] for file_str in file_strs]
+    return ["_".join(file_str.split("_")[:-1]) for file_str in file_strs]
 

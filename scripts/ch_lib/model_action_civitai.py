@@ -380,7 +380,7 @@ def get_id_and_dl_url_by_version_str(version_str: str, model_info: dict) -> tupl
 # download model from civitai by input
 # output to markdown log
 def dl_model_by_input(model_info: dict, model_type: str, subfolder_str: str, version_str: str, files: list,
-                      file_suffix: list, all_bool: bool, max_size_preview: bool, skip_nsfw_preview: bool) -> str:
+                      file_suffix: str, all_bool: bool, max_size_preview: bool, skip_nsfw_preview: bool) -> str:
     if not model_info:
         output = "model_info is None"
         util.printD(output)
@@ -572,6 +572,7 @@ def get_download_url_by_file_strs(file_strs: str, ver_info: dict, file_suffix: s
         return
 
     # find version by version_str
+    file_suffix = "_" + file_suffix if file_suffix else ""
     download_urls = []
     for file in files:
         # version name can not be used as id
@@ -582,8 +583,7 @@ def get_download_url_by_file_strs(file_strs: str, ver_info: dict, file_suffix: s
             if file_s == file_str:
                 # Add custom characters before the extension of the file name
                 # to avoid the file name conflicts with the existing files
-                file_suffix = "_" + file_suffix if file_suffix else ""
-                file_name_spilt = file["name"].split(".")
-                download_urls.append([file["downloadUrl"], file_name_spilt[0] + file_suffix + "." + file_name_spilt[1]])
+                file_name_spilt = os.path.splitext(file["name"])
+                download_urls.append([file["downloadUrl"], file_name_spilt[0] + file_suffix + file_name_spilt[-1]])
 
     return download_urls
