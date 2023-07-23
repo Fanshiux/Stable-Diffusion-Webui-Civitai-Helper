@@ -75,9 +75,9 @@ def on_ui_tabs():
         file_strs = model_action_civitai.get_file_strs_by_version_str(version_str, model_info)
         return dl_files_drop.update(choices=file_strs, value=[file_strs[0]] if len(file_strs) == 1 else [])
 
-    def check_duplicate_files(file_strs, file_dir, model_type, model_info):
+    def check_duplicate_files(file_strs, file_dir, model_type, model_info, version_str):
         if not file_dir:
-            return None, None
+            return None, None, dl_civitai_model_by_id_btn.update(visible=True)
         file_names = util.get_file_names_from_file_strs(file_strs)
         if file_dir == "/" or file_dir == "\\":
             subfolder = ""
@@ -86,11 +86,14 @@ def on_ui_tabs():
         else:
             subfolder = file_dir
         file_dir = os.path.join(model.folders[model_type], subfolder)
+        version_id = version_str.split("_")[-1]
+        if civitai.search_local_model_info_by_version_id(file_dir, version_id):
+            return "This model version is already existed", None, dl_civitai_model_by_id_btn.update(visible=False)
         for file_name in file_names:
             if model.check_duplicate_files(file_name, file_dir):
                 file_suffix = dl_file_suffix_txtbox.update(model_info["creator"]["username"])
                 return "文件名重复，请输入文件名后缀，否则会直接替换", file_suffix
-        return None, None
+        return None, None, dl_civitai_model_by_id_btn.update(visible=True)
 
     # ====UI====
     with gr.Blocks(analytics_enabled=False) as civitai_helper:
@@ -240,11 +243,13 @@ def on_ui_tabs():
         dl_version_drop.change(get_files_by_version_str, inputs=[dl_version_drop, dl_model_info],
                                outputs=[dl_files_drop])
         dl_subfolder_drop.change(check_duplicate_files,
-                                 inputs=[dl_files_drop, dl_subfolder_drop, dl_model_type_txtbox, dl_model_info],
-                                 outputs=[dl_log_md, dl_file_suffix_txtbox])
+                                 inputs=[dl_files_drop, dl_subfolder_drop, dl_model_type_txtbox, dl_model_info,
+                                         dl_version_drop],
+                                 outputs=[dl_log_md, dl_file_suffix_txtbox, dl_civitai_model_by_id_btn])
         dl_files_drop.change(check_duplicate_files,
-                             inputs=[dl_files_drop, dl_subfolder_drop, dl_model_type_txtbox, dl_model_info],
-                             outputs=[dl_log_md, dl_file_suffix_txtbox])
+                             inputs=[dl_files_drop, dl_subfolder_drop, dl_model_type_txtbox, dl_model_info,
+                                     dl_version_drop],
+                             outputs=[dl_log_md, dl_file_suffix_txtbox, dl_civitai_model_by_id_btn])
 
         dl_model_info_btn.click(get_model_info_by_url, inputs=dl_model_url_or_id_txtbox,
                                 outputs=[dl_model_info, dl_model_name_txtbox, dl_model_type_txtbox, dl_subfolder_drop,
