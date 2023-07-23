@@ -125,7 +125,7 @@ def check_duplicate_files(file_name: str, file_dir: str) -> bool:
         return False
 
     # check if file_name is in file_dir
-    if file_name in os.listdir(file_dir):
+    if file_name.lower() in [file_name.lower() for file_name in os.listdir(file_dir)]:
         util.printD("file_name is in file_dir")
         return True
 
