@@ -92,7 +92,7 @@ def on_ui_tabs():
         for file_name in file_names:
             if model.check_duplicate_files(file_name, file_dir):
                 file_suffix = dl_file_suffix_txtbox.update(model_info["creator"]["username"])
-                return "文件名重复，请输入文件名后缀，否则会直接替换", file_suffix
+                return "文件名重复，请输入文件名后缀，否则会直接替换", file_suffix, dl_civitai_model_by_id_btn.update(visible=True)
         return None, None, dl_civitai_model_by_id_btn.update(visible=True)
 
     # ====UI====
@@ -173,7 +173,7 @@ def on_ui_tabs():
                 gr.Markdown("### Check models' new version")
 
                 model_types_ckbg = gr.CheckboxGroup(choices=model_types, label="Model Types",
-                                                    value=["ti", "hyper", "ckp", "lora", "lycoris"])
+                                                    value=["ti", "hyper", "ckp", "lora"])
                 check_models_new_version_btn = gr.Button(value="Check New Version from Civitai", variant="primary")
 
                 check_models_new_version_log_md = gr.HTML("It takes time, just wait. Check console log for detail")
