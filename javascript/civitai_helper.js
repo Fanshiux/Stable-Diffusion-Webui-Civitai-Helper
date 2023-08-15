@@ -510,6 +510,14 @@ onUiLoaded(() => {
                     additional_node = card.querySelector(".actions .additional");
                     //get ul node, which is the parent of all buttons
                     ul_node = card.querySelector(".actions .additional ul");
+                    if(!ul_node){
+                        let tmp_ul = document.createElement("ul");
+                        let str=card.querySelector(".actions .name").innerHTML;
+                        tmp_ul.innerHTML='<a href="#" title="replace preview image with currently selected in gallery" onclick=" extraNetworksEditUserMetadata(event, &quot;'+active_tab_type+'&quot;, &quot;textual_inversion&quot;, &quot;'+str+'&quot;)">替换预览图像</a>';
+                        additional_node.insertBefore(tmp_ul, additional_node.firstChild);
+                        ul_node = card.querySelector(".actions .additional ul");
+                    }
+                    console.log("ul_node:" + ul_node);
                     // replace preview text button
                     replace_preview_btn = card.querySelector(".actions .additional a");
 
@@ -522,7 +530,7 @@ onUiLoaded(() => {
                         } else {
                             //reset
                             ul_node.style.background = null;
-                            // console.log("remove existed buttons");
+                            console.log("remove existed buttons");
                             // remove existed buttons
                             if (ul_node) {
                                 // find all .a child nodes
