@@ -11,10 +11,7 @@ from . import util
 
 # scan model to generate SHA256, then use this SHA256 to get model info from civitai
 # return output msg
-def scan_model(scan_model_types, max_size_preview, skip_nsfw_preview):
-    util.printD("Start scan_model")
-    output = ""
-
+def scan_model(scan_model_types, max_size_preview, skip_nsfw_preview, delay=1):
     # check model types
     if not scan_model_types:
         output = "Model Types is None, can not scan."
@@ -39,8 +36,8 @@ def scan_model(scan_model_types, max_size_preview, skip_nsfw_preview):
         for root, dirs, files in os.walk(model_folder, followlinks=True):
             for filename in files:
                 # check ext
-                item = os.path.join(root, filename)
-                base, ext = os.path.splitext(item)
+                filepath = os.path.join(root, filename)
+                base, ext = os.path.splitext(filepath)
                 if ext in model.exts:
                     # ignore vae file
                     if len(base) > 4:
@@ -54,9 +51,9 @@ def scan_model(scan_model_types, max_size_preview, skip_nsfw_preview):
                     info_file = base + civitai.suffix + model.info_ext
                     # check info file
                     if not os.path.isfile(info_file):
-                        util.printD("Creating model info for: " + filename)
+                        util.printD("Creating model info: " + util.shorten_path(filepath))
                         # get model's sha256
-                        hash = util.gen_file_sha256(item)
+                        hash = util.gen_file_sha256(filepath)
 
                         if not hash:
                             output = "failed generating SHA256 for model:" + filename
@@ -65,10 +62,9 @@ def scan_model(scan_model_types, max_size_preview, skip_nsfw_preview):
 
                         # use this sha256 to get model info from civitai
                         model_info = civitai.get_model_info_by_hash(hash)
-                        # delay 1 second for ti
                         if model_type == "ti":
-                            util.printD("Delay 1 second for TI")
-                            time.sleep(1)
+                            util.printD(f"Delay {delay} second for TI")
+                            time.sleep(delay)
 
                         if model_info is None:
                             output = "Connect to Civitai API service failed. Wait a while and try again"
@@ -82,7 +78,7 @@ def scan_model(scan_model_types, max_size_preview, skip_nsfw_preview):
                     model_count = model_count + 1
 
                     # check preview image
-                    civitai.get_preview_image_by_model_path(item, max_size_preview, skip_nsfw_preview)
+                    civitai.get_preview_image_by_model_path(filepath, max_size_preview, skip_nsfw_preview)
                     image_count = image_count + 1
 
     # scan_log = "Done"
@@ -97,7 +93,6 @@ def scan_model(scan_model_types, max_size_preview, skip_nsfw_preview):
 # Get model info by model type, name and url
 # output is log info to display on markdown component
 def get_model_info_by_input(model_type, model_name, model_url_or_id, max_size_preview, skip_nsfw_preview):
-    output = ""
     # parse model id
     model_id = civitai.get_model_id_from_url(model_url_or_id)
     if not model_id:
@@ -144,19 +139,18 @@ def get_model_info_by_input(model_type, model_name, model_url_or_id, max_size_pr
     return output
 
 
-# check models' new version and output to UI as markdown doc
+# check models' new version and output to UI as Markdown doc
 def check_models_new_version_to_md(model_types: list) -> str:
-    new_versions = civitai.check_models_new_version_by_model_types(model_types, 1)
+    new_versions = civitai.check_models_new_version_by_model_types(model_types, 2)
 
     count = 0
-    output = ""
     if not new_versions:
         output = "No model has new version"
     else:
         output = "Found new version for following models:  <br>"
         for new_version in new_versions:
             count = count + 1
-            model_path, model_id, model_name, new_verion_id, new_version_name, description, download_url, img_url = new_version
+            model_path, model_id, model_name, new_version_id, new_version_name, description, download_url, img_url = new_version
             # in md, each part is something like this:
             # [model_name](model_url)
             # [version_name](download_url)
@@ -172,7 +166,7 @@ def check_models_new_version_to_md(model_types: list) -> str:
                 # add js function to download new version into SD webui by python
                 part = part + "    "
                 # in embed HTML, onclick= will also follow a ", never a ', so have to write it as following
-                part = part + f"<u><a href='#' style='margin:0px 10px;' onclick=\"ch_dl_model_new_version(event, '{model_path}', '{new_verion_id}', '{download_url}')\">[Download into SD]</a></u>"
+                part = part + f"<u><a href='#' style='margin:0px 10px;' onclick=\"ch_dl_model_new_version(event, '{model_path}', '{new_version_id}', '{download_url}')\">[Download into SD]</a></u>"
 
             else:
                 part = part + f'<div style="font-size:16px;margin:6px 0px;">New Version: {new_version_name}'
@@ -194,8 +188,8 @@ def check_models_new_version_to_md(model_types: list) -> str:
 
 
 # get model info by url
-def get_model_info_by_url(model_url_or_id: str) -> tuple:
-    util.printD("Getting model info by: " + model_url_or_id)
+def get_model_info_by_url(model_url_or_id: str):
+    util.printD("Fetching model info: " + model_url_or_id)
 
     # parse model id
     model_id = civitai.get_model_id_from_url(model_url_or_id)
@@ -240,18 +234,18 @@ def get_model_info_by_url(model_url_or_id: str) -> tuple:
         util.printD("modelVersions is not in model_info")
         return
 
-    modelVersions = model_info["modelVersions"]
-    if not modelVersions:
+    model_versions = model_info["modelVersions"]
+    if not model_versions:
         util.printD("modelVersions is Empty")
         return
 
-    version_strs = []
-    for version in modelVersions:
+    versions = []
+    for version in model_versions:
         # version name can not be used as id
         # version id is not readable
         # so , we use name_id as version string
-        version_str = version["name"] + "_" + str(version["id"])
-        version_strs.append(version_str)
+        version = version["name"] + "_" + str(version["id"])
+        versions.append(version)
 
     # get folder by model type
     folder = model.folders[model_type]
@@ -262,19 +256,16 @@ def get_model_info_by_url(model_url_or_id: str) -> tuple:
         subfolders = []
 
     # add default root folder
-    subfolders.append("/")
+    subfolders.append(os.sep)
 
-    util.printD("Get following info for downloading:")
-    util.printD(f"model_name:{model_name}")
-    util.printD(f"model_type:{model_type}")
-    util.printD(f"subfolders:{subfolders}")
-    util.printD(f"version_strs:{version_strs}")
+    util.printD(f"model_info: [{model_type}]: {model_name}")
+    util.printD(f"versions: {versions}")
 
-    return model_info, model_name, model_type, subfolders, version_strs
+    return model_info, model_name, model_type, subfolders, versions
 
 
 # get version info by version string
-def get_ver_info_by_ver_str(version_str: str, model_info: dict) -> dict:
+def get_ver_info_by_ver_str(version_str: str, model_info: dict):
     if not version_str:
         util.printD("version_str is empty")
         return
@@ -288,14 +279,14 @@ def get_ver_info_by_ver_str(version_str: str, model_info: dict) -> dict:
         util.printD("modelVersions is not in model_info")
         return
 
-    modelVersions = model_info["modelVersions"]
-    if not modelVersions:
+    model_version = model_info["modelVersions"]
+    if not model_version:
         util.printD("modelVersions is Empty")
         return
 
     # find version by version_str
     version = None
-    for ver in modelVersions:
+    for ver in model_version:
         # version name can not be used as id
         # version id is not readable
         # so , we use name_id as version string
@@ -318,7 +309,7 @@ def get_ver_info_by_ver_str(version_str: str, model_info: dict) -> dict:
 
 # get download url from model info by version string
 # return - (version_id, download_url)
-def get_id_and_dl_url_by_version_str(version_str: str, model_info: dict) -> tuple:
+def get_id_and_dl_url_by_version_str(version_str: str, model_info: dict):
     if not version_str:
         util.printD("version_str is empty")
         return
@@ -332,14 +323,14 @@ def get_id_and_dl_url_by_version_str(version_str: str, model_info: dict) -> tupl
         util.printD("modelVersions is not in model_info")
         return
 
-    modelVersions = model_info["modelVersions"]
-    if not modelVersions:
+    model_versions = model_info["modelVersions"]
+    if not model_versions:
         util.printD("modelVersions is Empty")
         return
 
     # find version by version_str
     version = None
-    for ver in modelVersions:
+    for ver in model_versions:
         # version name can not be used as id
         # version id is not readable
         # so , we use name_id as version string
@@ -367,14 +358,14 @@ def get_id_and_dl_url_by_version_str(version_str: str, model_info: dict) -> tupl
         util.printD("downloadUrl is not in this version")
         return
 
-    downloadUrl = version["downloadUrl"]
-    if not downloadUrl:
+    download_url = version["downloadUrl"]
+    if not download_url:
         util.printD("downloadUrl is Empty")
         return
 
-    util.printD("Get Download Url: " + downloadUrl)
+    util.printD("Get Download Url: " + download_url)
 
-    return (version_id, downloadUrl)
+    return version_id, download_url
 
 
 # download model from civitai by input
@@ -403,16 +394,16 @@ def dl_model_by_input(model_info: dict, model_type: str, subfolder_str: str, ver
 
     # get model root folder
     if model_type not in model.folders.keys():
-        output = "Unknow model type: " + model_type
+        output = "Unknown model type: " + model_type
         util.printD(output)
         return output
 
     model_root_folder = model.folders[model_type]
 
     # get subfolder
-    if subfolder_str == "/" or subfolder_str == "\\":
+    if subfolder_str == os.sep:
         subfolder = ""
-    elif subfolder_str[:1] == "/" or subfolder_str[:1] == "\\":
+    elif subfolder_str[:1] == os.sep:
         subfolder = subfolder_str[1:]
     else:
         subfolder = subfolder_str
@@ -424,47 +415,36 @@ def dl_model_by_input(model_info: dict, model_type: str, subfolder_str: str, ver
         util.printD(output)
         return output
 
-    # get version info
-    ver_info = get_ver_info_by_ver_str(version_str, model_info)
-    if not ver_info:
-        output = "Fail to get version info, check console log for detail"
-        util.printD(output)
-        return output
-
-    version_id = ver_info["id"]
+    model_versions = model_info['modelVersions']
 
     if all_bool:
-        # get all download url from files info
-        # some model versions have multiple files
-        download_urls = []
-        if "files" in ver_info.keys():
-            for file_info in ver_info["files"]:
-                if "downloadUrl" in file_info.keys():
-                    download_urls.append(file_info["downloadUrl"])
+        idx = 0
+        for model_version in model_versions:
+            # check if this model is already existed
+            r = civitai.search_local_model_info_by_version_id(model_folder, model_version["id"])
+            if r:
+                util.printD("Exists file: '" + r["files"][0]["name"] + "', skipping it.")
+                continue
 
-        if not len(download_urls):
-            if "downloadUrl" in ver_info.keys():
-                download_urls.append(ver_info["downloadUrl"])
+            filepath = downloader.dl(model_version["downloadUrl"], model_folder, None, None)
+            if not filepath:
+                util.printD("Downloading failed, check console log for detail")
+                continue
 
-        # check if this model is already existed
-        r = civitai.search_local_model_info_by_version_id(model_folder, version_id)
-        if r:
-            output = "This model version is already existed"
+            idx = idx + 1
+            save_info_and_preview_image(filepath, model_version, max_size_preview, skip_nsfw_preview)
+            util.printD(f"{idx} of {len(model_versions)} files downloaded, save to: {filepath}")
+
+        output = f"Done, {idx} of {len(model_versions)} files downloaded"
+    else:
+        # get version info
+        ver_info = get_ver_info_by_ver_str(version_str, model_info)
+        if not ver_info:
+            output = "Fail to get version info, check console log for detail"
             util.printD(output)
             return output
+        version_id = ver_info["id"]
 
-        # download
-        filepath = ""
-        for url in download_urls:
-            model_filepath = downloader.dl(url, model_folder)
-            if not model_filepath:
-                output = "Downloading failed, check console log for detail"
-                util.printD(output)
-                return output
-
-            if url == ver_info["downloadUrl"]:
-                filepath = model_filepath
-    else:
         if files:
             download_urls = get_download_url_by_file_strs(files, ver_info, file_suffix)
 
@@ -496,22 +476,26 @@ def dl_model_by_input(model_info: dict, model_type: str, subfolder_str: str, ver
                 return output
 
             # download
-            filepath = downloader.dl(url, model_folder)
+            filepath = downloader.dl(url, model_folder, None, None)
             if not filepath:
                 output = "Downloading failed, check console log for detail"
                 util.printD(output)
                 return output
 
-    if not filepath:
-        filepath = model_filepath
+        # get version info
+        model_version = [mv for mv in model_versions if mv["id"] == version_id][0]
+        if not model_version:
+            output = "Model downloaded, but failed to get version info, check console log for detail. Model saved to: " + filepath
+            util.printD(output)
+            return output
 
-    # get version info
-    version_info = civitai.get_version_info_by_version_id(version_id)
-    if not version_info:
-        output = "Model downloaded, but failed to get version info, check console log for detail. Model saved to: " + filepath
-        util.printD(output)
-        return output
+        output = save_info_and_preview_image(filepath, model_version, max_size_preview, skip_nsfw_preview)
 
+    return output
+
+
+# save info and preview image
+def save_info_and_preview_image(filepath: str, version_info: dict, max_size_preview: bool, skip_nsfw_preview: bool):
     # write version info to file
     base, ext = os.path.splitext(filepath)
     info_file = base + civitai.suffix + model.info_ext
@@ -520,13 +504,14 @@ def dl_model_by_input(model_info: dict, model_type: str, subfolder_str: str, ver
     # then, get preview image
     civitai.get_preview_image_by_model_path(filepath, max_size_preview, skip_nsfw_preview)
 
-    output = "Done. Model downloaded to: " + filepath
+    output = "Done, model save to: " + util.shorten_path(filepath)
     util.printD(output)
+
     return output
 
 
 # get file strs by version string
-def get_file_strs_by_version_str(version_str: str, model_info: dict) -> dict:
+def get_file_strs_by_version_str(version_str: str, model_info: dict):
     version_info = get_ver_info_by_ver_str(version_str, model_info)
 
     # get files list
@@ -552,7 +537,7 @@ def get_file_strs_by_version_str(version_str: str, model_info: dict) -> dict:
 
 
 # get file list by file strings
-def get_download_url_by_file_strs(file_strs: str, ver_info: dict, file_suffix: str = "") -> dict:
+def get_download_url_by_file_strs(file_strs: str, ver_info: dict, file_suffix: str = ""):
     if not file_strs:
         util.printD("file_strs is empty")
         return

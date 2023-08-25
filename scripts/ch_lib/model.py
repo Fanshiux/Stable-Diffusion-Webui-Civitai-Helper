@@ -2,11 +2,11 @@
 # handle msg between js and python side
 import json
 import os
-from modules import shared
+from modules import shared, paths_internal
 from . import util
 
 # this is the default root path
-root_path = os.getcwd()
+root_path = paths_internal.data_path
 
 # if command line arguement is used to change model folder, 
 # then model folder is in absolute path, not based on this root path anymore.
@@ -15,7 +15,7 @@ folders = {
     "ti": os.path.join(root_path, "embeddings"),
     "hyper": os.path.join(root_path, "models", "hypernetworks"),
     "ckp": os.path.join(root_path, "models", "Stable-diffusion"),
-    "lora": os.path.join(root_path, "models", "Lora"),
+    "lora": os.path.join(root_path, "models", "Lora")
 }
 
 exts = (".bin", ".pt", ".safetensors", ".ckpt")
@@ -25,8 +25,6 @@ vae_suffix = ".vae"
 
 # get customer model path
 def get_custom_model_folder():
-    util.printD("Get Custom Model Folder")
-
     global folders
 
     if shared.cmd_opts.embeddings_dir and os.path.isdir(shared.cmd_opts.embeddings_dir):
@@ -43,9 +41,9 @@ def get_custom_model_folder():
 
 
 # write model info to file
-def write_model_info(path, model_info):
-    util.printD("Write model info to file: " + path)
-    with open(os.path.realpath(path), 'w') as f:
+def write_model_info(filepath, model_info):
+    util.printD("Write model info: " + util.shorten_path(filepath))
+    with open(os.path.realpath(filepath), 'w') as f:
         f.write(json.dumps(model_info, indent=4))
 
 
@@ -84,8 +82,7 @@ def get_model_names_by_type(model_type: str) -> list:
 
 
 # return 2 values: (model_root, model_path)
-def get_model_path_by_type_and_name(model_type: str, model_name: str) -> str:
-    util.printD("Run get_model_path_by_type_and_name")
+def get_model_path_by_type_and_name(model_type: str, model_name: str):
     if model_type not in folders.keys():
         util.printD("unknown model_type: " + model_type)
         return

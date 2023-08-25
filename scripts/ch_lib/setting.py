@@ -5,23 +5,19 @@ import os
 import modules.scripts as scripts
 from . import util
 
-
 name = "setting.json"
 path = os.path.join(scripts.basedir(), name)
 
 data = {
-    "model":{
+    "model": {
         "max_size_preview": True,
         "skip_nsfw_preview": False
     },
-    "general":{
+    "general": {
         "open_url_with_js": True,
-        "always_display": False,
-        "show_btn_on_thumb": True,
-        "base_url": "",
-        "proxy": "",
+        "base_url": ""
     },
-    "tool":{
+    "tool": {
         "aria2rpc": {
             "enable": False,
             "host": "localhost",
@@ -32,7 +28,6 @@ data = {
 }
 
 
-
 # save setting
 # return output msg for log
 def save():
@@ -40,14 +35,12 @@ def save():
 
     json_data = json.dumps(data, indent=4)
 
-    output = ""
-
-    #write to file
+    # write to file
     try:
         with open(path, 'w') as f:
             f.write(json_data)
     except Exception as e:
-        util.printD("Error when writing file:"+path)
+        util.printD("Error when writing file:" + path)
         output = str(e)
         util.printD(str(e))
         return output
@@ -66,10 +59,8 @@ def load():
     util.printD("Load setting from: " + path)
 
     if not os.path.isfile(path):
-        util.printD("No setting file, use default")
         return
 
-    json_data = None
     with open(path, 'r') as f:
         json_data = json.load(f)
 
@@ -77,39 +68,26 @@ def load():
     if not json_data:
         util.printD("load setting file failed")
         return
-    
+
     data = json_data
-
-    # check for new key
-    if "always_display" not in data["general"].keys():
-        data["general"]["always_display"] = False
-
-    if "show_btn_on_thumb" not in data["general"].keys():
-        data["general"]["show_btn_on_thumb"] = True
-
-    if "proxy" not in data["general"].keys():
-        data["general"]["proxy"] = ""
-
 
     return
 
 
 # save setting from parameter
-def save_from_input(max_size_preview, skip_nsfw_preview, open_url_with_js, always_display, show_btn_on_thumb, proxy, base_url, aria2rpc_enable, aria2rpc_host, aria2rpc_port, aria2rpc_secret):
+def save_from_input(max_size_preview, skip_nsfw_preview, open_url_with_js, base_url,
+                    aria2rpc_enable, aria2rpc_host, aria2rpc_port, aria2rpc_secret):
     global data
     data = {
-        "model":{
+        "model": {
             "max_size_preview": max_size_preview,
             "skip_nsfw_preview": skip_nsfw_preview
         },
-        "general":{
+        "general": {
             "open_url_with_js": open_url_with_js,
-            "always_display": always_display,
-            "show_btn_on_thumb": show_btn_on_thumb,
-            "base_url": base_url,
-            "proxy": proxy,
+            "base_url": base_url
         },
-        "tool":{
+        "tool": {
             "aria2rpc": {
                 "enable": aria2rpc_enable,
                 "host": aria2rpc_host,
@@ -119,10 +97,4 @@ def save_from_input(max_size_preview, skip_nsfw_preview, open_url_with_js, alway
         }
     }
 
-    output = save()
-
-    if not output:
-        output = ""
-
-    return output
-
+    return save()

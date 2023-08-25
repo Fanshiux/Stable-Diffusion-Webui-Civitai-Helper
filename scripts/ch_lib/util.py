@@ -5,17 +5,15 @@ import hashlib
 import requests
 import shutil
 
-version = "1.6.4"
 
 def_headers = {
     'User-Agent': 'Mozilla/5.0 (iPad; CPU OS 12_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148'}
-
-proxies = None
+version = "1.6.4"
 
 
 # print for debugging
-def printD(msg):
-    print(f"Civitai Helper: {msg}")
+def printD(msg, end=None):
+    print(f"[Civitai Helper] {msg}", end=end)
 
 
 def read_chunks(file, size=io.DEFAULT_BUFFER_SIZE):
@@ -29,7 +27,6 @@ def read_chunks(file, size=io.DEFAULT_BUFFER_SIZE):
 
 # Now, hashing use the same way as pip's source code.
 def gen_file_sha256(filname):
-    printD("Use Memory Optimized SHA256")
     blocksize = 1 << 20
     h = hashlib.sha256()
     length = 0
@@ -39,16 +36,15 @@ def gen_file_sha256(filname):
             h.update(block)
 
     hash_value = h.hexdigest()
-    printD("sha256: " + hash_value)
-    printD("length: " + str(length))
+    printD(f"sha256: {hash_value}, size: {hr_size(length)}")
     return hash_value
 
 
 # get preview image
 def download_file(url, path):
-    printD("Downloading file from: " + url)
+    printD("Downloading: " + url)
     # get file
-    r = requests.get(url, stream=True, headers=def_headers, proxies=proxies)
+    r = requests.get(url, stream=True, headers=def_headers)
     if not r.ok:
         printD("Get error code: " + str(r.status_code))
         printD(r.text)
@@ -59,12 +55,11 @@ def download_file(url, path):
         r.raw.decode_content = True
         shutil.copyfileobj(r.raw, f)
 
-    printD("File downloaded to: " + path)
+    printD("File saved: " + shorten_path(path))
 
 
 # get subfolder list
-def get_subfolders(folder: str) -> list:
-    printD("Get subfolder for: " + folder)
+def get_subfolders(folder: str):
     if not folder:
         printD("folder can not be None")
         return
@@ -87,8 +82,6 @@ def get_subfolders(folder: str) -> list:
 
 # get relative path
 def get_relative_path(item_path: str, parent_path: str) -> str:
-    # printD("item_path:"+item_path)
-    # printD("parent_path:"+parent_path)
     # item path must start with parent_path
     if not item_path:
         return ""
@@ -103,6 +96,26 @@ def get_relative_path(item_path: str, parent_path: str) -> str:
 
     # printD("relative:"+relative)
     return relative
+
+
+# get relative path
+def shorten_path(filepath:str) -> str:
+    ei = filepath.find('embeddings' + os.sep)
+    mi = filepath.find("models" + os.sep)
+    if ei >= 0:
+        return filepath[ei:]
+    elif mi >= 0:
+        return filepath[mi:]
+    return filepath
+
+
+# human readable size format
+def hr_size(size, decimal_places=2):
+    for unit in ['B', 'KB', 'MB', 'GB', 'TB', 'PB']:
+        if size < 1024.0 or unit == 'PiB':
+            break
+        size /= 1024.0
+    return f"{size:.{decimal_places}f} {unit}"
 
 
 # Get file_name from file_strs

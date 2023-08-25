@@ -2,11 +2,10 @@
 import sys
 import time
 
-import requests
 import os
-from . import util
-from . import civitai
+import requests
 from . import setting
+from . import util
 
 dl_ext = ".downloading"
 
@@ -18,14 +17,11 @@ requests.packages.urllib3.disable_warnings()
 
 # output is downloaded file path
 def dl(url, folder, filename=None, filepath=None):
-    util.printD("Start downloading from: " + url)
-    # get file_path
-    file_path = ""
-    url = civitai.get_url_from_base_url(url)
-    if filepath:
-        file_path = filepath
-    else:
-        # if file_path is not in parameter, then folder must be in parameter
+    util.printD("Start downloading: " + url)
+
+    # resolve filepath
+    if not filepath:
+        # if filepath is not in parameter, then folder must be in parameter
         if not folder:
             util.printD("folder is none")
             return
@@ -35,7 +31,7 @@ def dl(url, folder, filename=None, filepath=None):
             return
 
         if filename:
-            file_path = os.path.join(folder, filename)
+            filepath = os.path.join(folder, filename)
 
     if setting.data["tool"]["aria2rpc"]["enable"]:
         aria2rpc = setting.data["tool"]["aria2rpc"]
@@ -70,13 +66,15 @@ def dl(url, folder, filename=None, filepath=None):
                     total_size = int(result["totalLength"])
                     downloaded_size = int(result["completedLength"])
                     if 0 < total_size == downloaded_size:
-                        file_path = result["files"][0]["path"]
+                        filepath = result["files"][0]["path"]
                         break
                     download_speed = round(int(result["downloadSpeed"]) / 1000 / 1000, 1)
                     # progress
-                    progress = int(50 * downloaded_size / total_size)
-                    sys.stdout.reconfigure(encoding='utf-8')
-                    sys.stdout.write("\r[%s%s] %d%%\t%d MB" % ('-' * progress, ' ' * (50 - progress), 100 * downloaded_size / total_size, download_speed))
+                    terminal_size = os.get_terminal_size().columns - 8
+                    ratio = downloaded_size / total_size
+                    progress = int(100 * ratio)
+                    sys.stdout.write("\r%d%%|%s%s|\t%d MB" % (
+                        progress, '█' * int(ratio * terminal_size), ' ' * int((1 - ratio) * terminal_size), download_speed))
                     sys.stdout.flush()
                     time.sleep(1)
                 except Exception:
@@ -84,84 +82,97 @@ def dl(url, folder, filename=None, filepath=None):
         except Exception as e:
             util.printD(e)
     else:
-        # first request for header
-        rh = requests.get(url, stream=True, verify=False, headers=util.def_headers, proxies=util.proxies)
-        # get file size
-        total_size = int(rh.headers['Content-Length'])
-        util.printD(f"File size: {total_size}")
+        filename, total_size, cd = get_size_and_name(url)
 
-        # if file_path is empty, need to get file name from download url's header
-        if not file_path:
-            filename = ""
-            if "Content-Disposition" in rh.headers.keys():
-                cd = rh.headers["Content-Disposition"]
-                # Extract the filename from the header
-                # content of a CD: "attachment;filename=FileName.txt"
-                # in case "" is in CD filename's start and end, need to strip them out
-                filename = cd.split("=")[1].strip('"')
-                if not filename:
-                    util.printD("Fail to get file name from Content-Disposition: " + cd)
-                    return
+        if not filepath and not filename:
+            util.printD("Fail to get file name from Content-Disposition: " + cd)
+            return
 
-            if not filename:
-                util.printD("Can not get file name from download url's header")
-                return
+        # with folder and filename, now we have the full file path
+        filepath = os.path.join(folder, filename)
 
-            # with folder and filename, now we have the full file path
-            file_path = os.path.join(folder, filename)
+        util.printD(f"File size: {util.human_readable_size(total_size)}")
+        util.printD("Target filepath: " + filepath)
+        base, ext = os.path.splitext(filepath)
 
-        util.printD("Target file path: " + file_path)
-        base, ext = os.path.splitext(file_path)
-
-        # check if file is already exist
-        count = 2
-        new_base = base
-        while os.path.isfile(file_path):
-            util.printD("Target file already exist.")
-            # re-name
-            new_base = base + "_" + str(count)
-            file_path = new_base + ext
-            count += 1
-
-        # use a temp file for downloading
-        dl_file_path = new_base + dl_ext
-
-        util.printD(f"Downloading to temp file: {dl_file_path}")
-
-        # check if downloading file is exsited
-        downloaded_size = 0
-        if os.path.exists(dl_file_path):
-            downloaded_size = os.path.getsize(dl_file_path)
-
-        util.printD(f"Downloaded size: {downloaded_size}")
+        dl_filepath, filepath = resolve_dl_filepath(base, ext, filepath)
+        # util.printD(f"Temp file: {dl_filepath}")
 
         # create header range
-        headers = {'Range': 'bytes=%d-' % downloaded_size}
-        headers['User-Agent'] = util.def_headers['User-Agent']
+        headers = util.def_headers.copy()
 
-        # download with header
-        r = requests.get(url, stream=True, verify=False, headers=headers, proxies=util.proxies)
+        # check if downloading file exists
+        downloaded_size = 0
+        if os.path.exists(dl_filepath):
+            downloaded_size = os.path.getsize(dl_filepath)
+            if downloaded_size > 0:
+                headers['Range'] = f"bytes={downloaded_size}-"
+                util.printD(f"Downloaded size: {util.hr_size(downloaded_size)}")
+
+        r = requests.get(url, stream=True, headers=headers, proxies=util.proxies)
 
         # write to file
-        with open(dl_file_path, "ab") as f:
-            for chunk in r.iter_content(chunk_size=1024):
-                if chunk:
-                    downloaded_size += len(chunk)
-                    f.write(chunk)
-                    # force to write to disk
-                    f.flush()
+        with open(dl_filepath, "ab") as f:
+            # sys.stdout.reconfigure(encoding='utf-8')
 
-                    # progress
-                    progress = int(50 * downloaded_size / total_size)
-                    sys.stdout.reconfigure(encoding='utf-8')
-                    sys.stdout.write(
-                        "\r[%s%s] %d%%" % ('-' * progress, ' ' * (50 - progress), 100 * downloaded_size / total_size))
-                    sys.stdout.flush()
+            for chunk in r.iter_content(chunk_size=4096):
+                downloaded_size += len(chunk)
+                f.write(chunk)
+
+                # progress
+                terminal_size = os.get_terminal_size().columns - 8
+                ratio = downloaded_size / total_size
+                progress = int(100 * ratio)
+                sys.stdout.write("\r%d%%|%s%s|" % (
+                    progress, '█' * int(ratio * terminal_size), ' ' * int((1 - ratio) * terminal_size)))
+                sys.stdout.flush()
+
+        # check if this file are downloading complete, by comparing it's size
+        if downloaded_size < total_size:
+            print()
+            util.printD(f"Oops! file downloading incomplete: {filename}")
+            return
 
         # rename file
-        os.rename(dl_file_path, file_path)
+        os.rename(dl_filepath, filepath)
 
     print()
 
-    util.printD(f"File Downloaded to: {file_path}")
-    return file_path
+    util.printD(f"File save to: {filepath}")
+    return filepath
+
+
+def resolve_dl_filepath(base, ext, filepath):
+    # check if file is already exist
+    count = 2
+    new_base = base
+    while os.path.isfile(filepath):
+        util.printD("File exists: " + util.shorten_path(filepath))
+        # re-name
+        new_base = base + "_" + str(count)
+        filepath = new_base + ext
+        count += 1
+    # use a temp file for downloading
+    dl_file_path = new_base + dl_ext
+    return dl_file_path, filepath
+
+
+def get_size_and_name(url):
+    # first request for header
+    r = requests.get(url, stream=True, headers=util.def_headers)
+    # get file size
+    total_size = int(r.headers['Content-Length'])
+    cd = r.headers["Content-Disposition"]
+    server_filename = filename_from_content_disposition(cd)
+
+    return server_filename, total_size, cd
+
+
+def filename_from_content_disposition(cd):
+    """
+    Extract the filename from the header "Content-Disposition"
+    patterns are like: "attachment;filename=FileName.txt"
+    in case "" is in CD filename's start and end, need to strip them out
+    """
+    server_filename = cd.split("=")[1].strip('"')
+    return server_filename.encode("ISO-8859-1").decode()
