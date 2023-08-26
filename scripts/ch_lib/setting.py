@@ -53,7 +53,7 @@ def save():
 
 # load setting to global data
 def load():
-    # load data into globel data
+    # load data into global data
     global data
 
     util.printD("Load setting from: " + path)

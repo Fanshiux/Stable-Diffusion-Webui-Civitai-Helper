@@ -14,7 +14,7 @@ py_actions = "open_url"
 def parse_js_msg(msg):
     msg_dict = json.loads(msg)
 
-    # in case client side run JSON.stringify twice
+    # in case client side run 'JSON.stringify' twice
     if type(msg_dict) == str:
         msg_dict = json.loads(msg_dict)
 

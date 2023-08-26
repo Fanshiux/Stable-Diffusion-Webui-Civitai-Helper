@@ -8,9 +8,9 @@ from . import util
 # this is the default root path
 root_path = paths_internal.data_path
 
-# if command line arguement is used to change model folder, 
+# if command line argument is used to change model folder,
 # then model folder is in absolute path, not based on this root path anymore.
-# so to make extension work with those absolute model folder paths, model folder also need to be in absolute path
+# so to make extension work with those absolute model folder paths, model folder also needs to be in absolute path
 folders = {
     "ti": os.path.join(root_path, "embeddings"),
     "hyper": os.path.join(root_path, "models", "hypernetworks"),
@@ -23,7 +23,7 @@ info_ext = ".info"
 vae_suffix = ".vae"
 
 
-# get customer model path
+# get a customer model path
 def get_custom_model_folder():
     global folders
 
@@ -81,7 +81,7 @@ def get_model_names_by_type(model_type: str) -> list:
     return model_names
 
 
-# return 2 values: (model_root, model_path)
+# return two values: (model_root, model_path)
 def get_model_path_by_type_and_name(model_type: str, model_name: str):
     if model_type not in folders.keys():
         util.printD("unknown model_type: " + model_type)

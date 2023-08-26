@@ -11,14 +11,13 @@ from . import model
 from . import msg_handler
 from . import util
 
-
 setting.load()
 
 
 # get civitai's model url and open it in browser
 # parameter: model_type, search_term
 # output: python msg - will be sent to hidden textbox then picked by js side
-def open_model_url(msg, open_url_with_js=False):
+def open_model_url(msg):
     result = msg_handler.parse_js_msg(msg)
     if not result:
         util.printD("Parsing js ms failed")
@@ -77,18 +76,18 @@ def add_trigger_words(msg):
         util.printD(f"Failed to get trainedWords from info file for {model_type} {search_term}")
         return [prompt, prompt]
 
-    trainedWords = model_info["trainedWords"]
-    if not trainedWords:
+    trained_words = model_info["trainedWords"]
+    if not trained_words:
         util.printD(f"No trainedWords from info file for {model_type} {search_term}")
         return [prompt, prompt]
 
-    if len(trainedWords) == 0:
+    if len(trained_words) == 0:
         util.printD(f"trainedWords from info file for {model_type} {search_term} is empty")
         return [prompt, prompt]
 
     # get ful trigger words
     trigger_words = ""
-    for word in trainedWords:
+    for word in trained_words:
         trigger_words = trigger_words + word + ", "
 
     new_prompt = prompt + " " + trigger_words
@@ -99,7 +98,7 @@ def add_trigger_words(msg):
 
 # use preview image's prompt as prompt
 # parameter: model_type, model_name, prompt, neg_prompt
-# return: [new_prompt, new_neg_prompt, new_prompt, new_neg_prompt,] - return twice for txt2img and img2img
+# return: [new_prompt, new_neg_prompt, new_prompt, new_neg_prompt, ] - return twice for txt2img and img2img
 def use_preview_image_prompt(msg):
     result = msg_handler.parse_js_msg(msg)
     if not result:
@@ -143,7 +142,7 @@ def use_preview_image_prompt(msg):
                     if img["meta"]["negativePrompt"]:
                         preview_neg_prompt = img["meta"]["negativePrompt"]
 
-                # we only need 1 prompt
+                # we only need one prompt
                 if preview_prompt:
                     break
 
@@ -158,8 +157,6 @@ def use_preview_image_prompt(msg):
 # output is a md log
 def dl_model_new_version(msg, max_size_preview, skip_nsfw_preview):
     util.printD("Start dl_model_new_version")
-
-    output = ""
 
     result = msg_handler.parse_js_msg(msg)
     if not result:
@@ -196,11 +193,11 @@ def dl_model_new_version(msg, max_size_preview, skip_nsfw_preview):
         util.printD(output)
         return output
 
-    # get model folder from model path
+    # get model folder from a model path
     model_folder = os.path.dirname(model_path)
 
-    # no need to check when downloading new version, since checking new version is already checked
-    # check if this model is already existed
+    # no need to check when downloading a new version, since checking a new version is already
+    # checked if this model is already existed
     # r = civitai.search_local_model_info_by_version_id(model_folder, version_id)
     # if r:
     #     output = "This model version is already existed"

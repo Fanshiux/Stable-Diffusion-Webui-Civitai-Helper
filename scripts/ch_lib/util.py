@@ -7,7 +7,8 @@ import shutil
 
 
 def_headers = {
-    'User-Agent': 'Mozilla/5.0 (iPad; CPU OS 12_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148'}
+    'User-Agent': 'Mozilla/5.0 (iPad; CPU OS 12_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148'
+}
 version = "1.6.4"
 
 
@@ -25,13 +26,13 @@ def read_chunks(file, size=io.DEFAULT_BUFFER_SIZE):
         yield chunk
 
 
-# Now, hashing use the same way as pip's source code.
-def gen_file_sha256(filname):
-    blocksize = 1 << 20
+# Now, hashing uses the same way as pip's source code.
+def gen_file_sha256(filename):
+    block_size = 1 << 20
     h = hashlib.sha256()
     length = 0
-    with open(os.path.realpath(filname), 'rb') as f:
-        for block in read_chunks(f, size=blocksize):
+    with open(os.path.realpath(filename), 'rb') as f:
+        for block in read_chunks(f, size=block_size):
             length += len(block)
             h.update(block)
 
@@ -58,7 +59,7 @@ def download_file(url, path):
     printD("File saved: " + shorten_path(path))
 
 
-# get subfolder list
+# get a subfolder list
 def get_subfolders(folder: str):
     if not folder:
         printD("folder can not be None")
@@ -73,14 +74,14 @@ def get_subfolders(folder: str):
     for root, dirs, files in os.walk(folder, followlinks=True):
         for dir in dirs:
             full_dir_path = os.path.join(root, dir)
-            # get subfolder path from it
+            # get a subfolder path from it
             subfolder = full_dir_path[prefix_len:]
             subfolders.append(subfolder)
 
     return subfolders
 
 
-# get relative path
+# get a relative path
 def get_relative_path(item_path: str, parent_path: str) -> str:
     # item path must start with parent_path
     if not item_path:
@@ -98,7 +99,7 @@ def get_relative_path(item_path: str, parent_path: str) -> str:
     return relative
 
 
-# get relative path
+# get a relative path
 def shorten_path(filepath:str) -> str:
     ei = filepath.find('embeddings' + os.sep)
     mi = filepath.find("models" + os.sep)

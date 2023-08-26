@@ -23,7 +23,7 @@ def dl(url, folder, filename=None, filepath=None):
 
     # resolve filepath
     if not filepath:
-        # if filepath is not in parameter, then folder must be in parameter
+        # if filepath is not in parameter, then the folder must be in parameter
         if not folder:
             util.printD("folder is none")
             return
@@ -93,7 +93,7 @@ def dl(url, folder, filename=None, filepath=None):
         # with folder and filename, now we have the full file path
         filepath = os.path.join(folder, filename)
 
-        util.printD(f"File size: {util.human_readable_size(total_size)}")
+        util.printD(f"File size: {util.hr_size(total_size)}")
         util.printD("Target filepath: " + filepath)
         base, ext = os.path.splitext(filepath)
 
@@ -111,7 +111,7 @@ def dl(url, folder, filename=None, filepath=None):
                 headers['Range'] = f"bytes={downloaded_size}-"
                 util.printD(f"Downloaded size: {util.hr_size(downloaded_size)}")
 
-        r = requests.get(url, stream=True, headers=headers, proxies=util.proxies)
+        r = requests.get(url, stream=True, headers=headers)
 
         # write to file
         with open(dl_filepath, "ab") as f:
@@ -129,7 +129,7 @@ def dl(url, folder, filename=None, filepath=None):
                     progress, '█' * int(ratio * terminal_size), ' ' * int((1 - ratio) * terminal_size)))
                 sys.stdout.flush()
 
-        # check if this file are downloading complete, by comparing it's size
+        # check if this file is downloading complete, by comparing it is size
         if downloaded_size < total_size:
             print()
             util.printD(f"Oops! file downloading incomplete: {filename}")
@@ -145,7 +145,7 @@ def dl(url, folder, filename=None, filepath=None):
 
 
 def resolve_dl_filepath(base, ext, filepath):
-    # check if file is already exist
+    # check if the file already exists
     count = 2
     new_base = base
     while os.path.isfile(filepath):
@@ -174,7 +174,7 @@ def filename_from_content_disposition(cd):
     """
     Extract the filename from the header "Content-Disposition"
     patterns are like: "attachment;filename=FileName.txt"
-    in case "" is in CD filename's start and end, need to strip them out
+    in case "" is in CD filename is start and end, need to strip them out
     """
     server_filename = cd.split("=")[1].strip('"')
     return server_filename.encode("ISO-8859-1").decode()

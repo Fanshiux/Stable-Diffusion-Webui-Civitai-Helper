@@ -19,7 +19,7 @@ def scan_model(scan_model_types, max_size_preview, skip_nsfw_preview, delay=1):
         return output
 
     model_types = []
-    # check type if it is a string
+    # check a type if it is a string
     if type(scan_model_types) == str:
         model_types.append(scan_model_types)
     else:
@@ -91,7 +91,7 @@ def scan_model(scan_model_types, max_size_preview, skip_nsfw_preview, delay=1):
 
 
 # Get model info by model type, name and url
-# output is log info to display on markdown component
+# output is log info to display on a markdown component
 def get_model_info_by_input(model_type, model_name, model_url_or_id, max_size_preview, skip_nsfw_preview):
     # parse model id
     model_id = civitai.get_model_id_from_url(model_url_or_id)
@@ -100,7 +100,7 @@ def get_model_info_by_input(model_type, model_name, model_url_or_id, max_size_pr
         util.printD(output)
         return output
 
-    # get model file path
+    # get a model file path
     # model could be in subfolder
     result = model.get_model_path_by_type_and_name(model_type, model_name)
     if not result:
@@ -114,7 +114,7 @@ def get_model_info_by_input(model_type, model_name, model_url_or_id, max_size_pr
         util.printD(output)
         return output
 
-    # get info file path
+    # get an info file path
     base, ext = os.path.splitext(model_path)
     info_file = base + civitai.suffix + model.info_ext
 
@@ -163,7 +163,7 @@ def check_models_new_version_to_md(model_types: list) -> str:
                 # replace "\" to "/" in model_path for windows
                 model_path = model_path.replace('\\', '\\\\')
                 part = part + f'<div style="font-size:16px;margin:6px 0px;">New Version: <u><a href="{download_url}" target="_blank" style="margin:0px 10px;">{new_version_name}</a></u>'
-                # add js function to download new version into SD webui by python
+                # add js function to download a new version into SD webui by python
                 part = part + "    "
                 # in embed HTML, onclick= will also follow a ", never a ', so have to write it as following
                 part = part + f"<u><a href='#' style='margin:0px 10px;' onclick=\"ch_dl_model_new_version(event, '{model_path}', '{new_version_id}', '{download_url}')\">[Download into SD]</a></u>"
@@ -219,7 +219,7 @@ def get_model_info_by_url(model_url_or_id: str):
 
     model_type = civitai.model_type_dict[civitai_model_type]
 
-    # get model type
+    # get a model type
     if "name" not in model_info.keys():
         util.printD("model name is not in model_info")
         return
@@ -229,7 +229,7 @@ def get_model_info_by_url(model_url_or_id: str):
         util.printD("model name is Empty")
         model_name = ""
 
-    # get version list
+    # get a version list
     if "modelVersions" not in model_info.keys():
         util.printD("modelVersions is not in model_info")
         return
@@ -241,9 +241,9 @@ def get_model_info_by_url(model_url_or_id: str):
 
     versions = []
     for version in model_versions:
-        # version name can not be used as id
-        # version id is not readable
-        # so , we use name_id as version string
+        # version name can not be used as an id
+        # version id is not readable, so
+        #  we use name_id as version string
         version = version["name"] + "_" + str(version["id"])
         versions.append(version)
 
@@ -274,7 +274,7 @@ def get_ver_info_by_ver_str(version_str: str, model_info: dict):
         util.printD("model_info is None")
         return
 
-    # get version list
+    # get a version list
     if "modelVersions" not in model_info.keys():
         util.printD("modelVersions is not in model_info")
         return
@@ -287,9 +287,9 @@ def get_ver_info_by_ver_str(version_str: str, model_info: dict):
     # find version by version_str
     version = None
     for ver in model_version:
-        # version name can not be used as id
-        # version id is not readable
-        # so , we use name_id as version string
+        # version name can not be used as an id
+        # version id is not readable, so
+        #  we use name_id as version string
         ver_str = ver["name"] + "_" + str(ver["id"])
         if ver_str == version_str:
             # find version
@@ -318,7 +318,7 @@ def get_id_and_dl_url_by_version_str(version_str: str, model_info: dict):
         util.printD("model_info is None")
         return
 
-    # get version list
+    # get a version list
     if "modelVersions" not in model_info.keys():
         util.printD("modelVersions is not in model_info")
         return
@@ -331,9 +331,9 @@ def get_id_and_dl_url_by_version_str(version_str: str, model_info: dict):
     # find version by version_str
     version = None
     for ver in model_versions:
-        # version name can not be used as id
-        # version id is not readable
-        # so , we use name_id as version string
+        # version name can not be used as an id
+        # version id is not readable, so
+        #  we use name_id as version string
         ver_str = ver["name"] + "_" + str(ver["id"])
         if ver_str == version_str:
             # find version
@@ -514,7 +514,7 @@ def save_info_and_preview_image(filepath: str, version_info: dict, max_size_prev
 def get_file_strs_by_version_str(version_str: str, model_info: dict):
     version_info = get_ver_info_by_ver_str(version_str, model_info)
 
-    # get files list
+    # get a file list
     if "files" not in version_info.keys():
         util.printD("files is not in version_info")
         return
@@ -527,16 +527,16 @@ def get_file_strs_by_version_str(version_str: str, model_info: dict):
     # find version by version_str
     file_strs = []
     for file in files:
-        # version name can not be used as id
-        # version id is not readable
-        # so , we use name_id as version string
+        # version name can not be used as an id
+        # version id is not readable, so
+        #  we use name_id as version string
         file_str = file["name"] + "_" + str(file["id"])
         file_strs.append(file_str)
 
     return file_strs
 
 
-# get file list by file strings
+# get a file list by file strings
 def get_download_url_by_file_strs(file_strs: str, ver_info: dict, file_suffix: str = ""):
     if not file_strs:
         util.printD("file_strs is empty")
@@ -546,7 +546,7 @@ def get_download_url_by_file_strs(file_strs: str, ver_info: dict, file_suffix: s
         util.printD("version_info is None")
         return
 
-    # get file list
+    # get a file list
     if "files" not in ver_info.keys():
         util.printD("files is not in model_info")
         return
@@ -560,9 +560,9 @@ def get_download_url_by_file_strs(file_strs: str, ver_info: dict, file_suffix: s
     file_suffix = "_" + file_suffix if file_suffix else ""
     download_urls = []
     for file in files:
-        # version name can not be used as id
-        # version id is not readable
-        # so , we use name_id as version string
+        # version name can not be used as an id
+        # version id is not readable, so
+        #  we use name_id as version string
         file_s = file["name"] + "_" + str(file["id"])
         for file_str in file_strs:
             if file_s == file_str:
