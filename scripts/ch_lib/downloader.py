@@ -6,6 +6,7 @@ import os
 import requests
 from . import setting
 from . import util
+from . import civitai
 
 dl_ext = ".downloading"
 
@@ -17,6 +18,7 @@ requests.packages.urllib3.disable_warnings()
 
 # output is downloaded file path
 def dl(url, folder, filename=None, filepath=None):
+    url = civitai.get_url_from_base_url(url)
     util.printD("Start downloading: " + url)
 
     # resolve filepath
