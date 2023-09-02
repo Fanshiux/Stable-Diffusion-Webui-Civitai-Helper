@@ -97,7 +97,7 @@ async function open_model_url(event, model_type, search_term) {
                 open(py_msg_json.content.url, '_blank')
             }
         }
-    } catch (e) {}
+    } catch (e) { }
 }
 
 function add_trigger_words(event, model_type, search_term) {
@@ -205,23 +205,20 @@ const model_type_mapping = {
     'textual_inversion': 'ti',
     'hypernetworks': 'hyper',
     'checkpoints': 'ckp',
-    'lora': 'lora',
-    'lycoris': 'lycoris'
+    'lora': 'lora'
 }
 
-function createAdditionalBtn(btnProps) {
-    let el = document.createElement('a')
-    Object.assign(el, btnProps)
-    el.setAttribute('onclick', btnProps.onclick)
-    el.className = 'civitai-helper-action'
-    el.href = 'javascript:void(0)'
+function createAdditionalBtn(props) {
+    let el = createEl('a','civitai-helper-action')
+    Object.assign(el, props)
+    el.setAttribute('onclick', props.onclick)
     return el
 }
 
 // add just one model_type cards buttons
 function update_tab_cards(model_type, container) {
-
     model_type = model_type_mapping[model_type]
+    if (!model_type) return
 
     for (let card of container.children) {
         // additional node
@@ -261,53 +258,38 @@ function update_tab_cards(model_type, container) {
     }
 }
 
-// add all model_type cards buttons by tab_prefix
-function update_all_tab_cards(tab_prefix) {
-    let model_type_list = ['textual_inversion', 'hypernetworks', 'checkpoints', 'lora', 'lycoris']
-    for (let model_type of model_type_list) {
-        let container_id = [tab_prefix, model_type, 'cards'].join('_')
-        let container = document.getElementById(container_id)
-        container && update_tab_cards(model_type, container)
+function addHelperBtn(tab_prefix) {
+    let tab_nav = $el(`#${tab_prefix}_extra_tabs > .tab-nav`)
+    if (!tab_nav) {
+        return setTimeout(() => addHelperBtn, 999, tab_prefix)
     }
+    // function createEl(tag, clazz, attrs, style) {
+    let scan_btn = createEl('label', 'gradio-button custom-button tool', {
+        title: 'Download missing model info and preview image',
+        innerText: '🖼️'
+    })
+    scan_btn.setAttribute('for', 'ch_scan_model_civitai_btn')
+    tab_nav.appendChild(scan_btn)
 }
 
-function add_helper_btn(tab_prefix) {
-    let tab_id = tab_prefix + '_extra_tabs'
-    // get Refresh button under toolbar
-    let extra_network_refresh_btn = app.getElementById(tab_prefix + '_extra_refresh')
-    if (!extra_network_refresh_btn) {
-        console.log('can not get extra network refresh button for ' + tab_id)
-        return
-    }
 
-    // add refresh button to toolbar
-    let ch_refresh = document.createElement('button')
-    ch_refresh.innerHTML = '🔄️'
-    ch_refresh.title = 'Refresh Civitai Helper\'s additional buttons'
-    ch_refresh.className = 'lg secondary gradio-button'
-    ch_refresh.style.fontSize = '2em'
-    ch_refresh.onclick = () => update_all_tab_cards(tab_prefix)
-
-    extra_network_refresh_btn.parentNode.appendChild(ch_refresh)
-}
-
-// listen to "Extra Networks" toggle button's click event,
-// then initialiy add all buttons, only trigger once,
-// after that all updates are trigger by refresh button click.
 function listenToToggleBtn(tab_prefix) {
-    document.getElementById(tab_prefix + '_extra_networks').addEventListener('click', () => {
-        // wait UI updates
-        let n = 0, timer = setInterval(() => {
-            update_all_tab_cards(tab_prefix)
-            if (++n === 6) clearInterval(timer)
-        }, 600)
-    }, { once: true })
+    $el(`#${tab_prefix}_extra_tabs .tab-nav`).addEventListener('click', e => {
+        let el = e.target
+        let model_type = el.innerText.trim().replaceAll(' ', '_').toLowerCase()
+        if (el.tagName != 'BUTTON' || !model_type_mapping.hasOwnProperty(model_type)) return
+        let container_id = `${tab_prefix}_${model_type}_cards`
+        let n = 5, timer = setInterval(() => {
+            update_tab_cards(model_type, $id(container_id))
+            if (--n == 0) clearInterval(timer)
+        }, 800)
+    })
 }
 
 // listen to refresh buttons' click event
 // check and re-add buttons back on
 function listenToRefreshBtn(tab_prefix) {
-    document.getElementById(tab_prefix + '_extra_refresh').addEventListener('click', e => {
+    $id(tab_prefix + '_extra_refresh').addEventListener('click', e => {
         let model_type = e.target.closest('.tab-nav').querySelector('button.selected').innerText.replaceAll(' ', '_').toLowerCase()
         checkPeriodically(tab_prefix, model_type)
     })
@@ -325,8 +307,7 @@ function checkPeriodically(tab_prefix, model_type) {
             setTimeout(check, 1000)
             return
         }
-        update_all_tab_cards(tab_prefix)
-        // update_tab_cards(model_type, app.querySelector(container_id))
+        update_tab_cards(model_type, $el(container_id))
     }
     setTimeout(check, 1500)
 }
@@ -350,25 +331,11 @@ addEventListener('keydown', e => {
     }
 })
 
-function helperInit() {
+onUiLoaded(() => {
     let tab_prefixes = ['txt2img', 'img2img']
     for (let tab_prefix of tab_prefixes) {
-
-        // add refresh button to extra network's toolbar
-        // add_helper_btn(tab_prefix);
-
-        listenToToggleBtn(tab_prefix);
-
-        listenToRefreshBtn(tab_prefix);
+        listenToRefreshBtn(tab_prefix)
+        listenToToggleBtn(tab_prefix)
+        addHelperBtn(tab_prefix)
     }
-}
-
-onUiLoaded(() => {
-
-    // get gradio version
-    let gradio_version = ch_gradio_version()
-    console.log(gradio_version)
-
-    helperInit()
-
 })

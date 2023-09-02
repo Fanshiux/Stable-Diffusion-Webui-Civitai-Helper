@@ -524,7 +524,7 @@ def check_models_new_version_by_model_types(model_types: list, delay: float = 2)
         if model_type not in mts:
             continue
 
-        util.printD("Scanning path: " + model_folder)
+        util.printD("Scanning path: " + util.shorten_path(model_folder))
         for root, dirs, files in os.walk(model_folder, followlinks=True):
             for filename in files:
                 # check ext

@@ -7,7 +7,7 @@ blockquote ol {
     margin:4px 40px;
 }
 .block.padded.ch_box {
-    padding: 10px !important
+    padding: 10px !important;
 }
 .ch_box .gradio-row + .gradio-row {
     margin-top: .75em;

@@ -10,8 +10,6 @@ from . import civitai
 
 dl_ext = ".downloading"
 
-setting.load()
-
 # disable ssl warning info
 requests.packages.urllib3.disable_warnings()
 

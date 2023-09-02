@@ -135,7 +135,7 @@ def on_ui_tabs():
             with gr.Row():
                 model_url_or_id_txtbox = gr.Textbox(placeholder="Civitai URL", lines=1, show_label=False)
                 empty_info_only_ckb = gr.Checkbox(label="Only Show Models have no Info", value=False,
-                                                  elem_id="ch_empty_info_only_ckb", elem_classes="ch_vpadding")
+                                                  elem_id="ch_empty_info_only_ckb")
                 get_civitai_model_info_by_id_btn = gr.Button(value="Get Model Info from Civitai", variant="primary")
             get_model_by_id_log_md = gr.Markdown("")
 
@@ -177,7 +177,7 @@ def on_ui_tabs():
             gr.Markdown("### Other Setting")
             with gr.Row():
                 open_url_with_js_ckb = gr.Checkbox(label="Open Url At Client Side", value=open_url_with_js)
-                dl_all_ckb = gr.Checkbox(label="Download All files", value=False, elem_id="ch_dl_all_ckb", elem_classes="ch_vpadding")
+                dl_all_ckb = gr.Checkbox(label="Download All files", value=False, elem_id="ch_dl_all_ckb")
                 aria2rpc_enable = gr.Checkbox(label="Enable Aria2 Downloader", value=aria2rpc["enable"], elem_id="ch_aria2rpc_enable")
 
             with gr.Row():
