@@ -154,7 +154,7 @@ def on_ui_tabs():
                 dl_subfolder_drop = gr.Dropdown(choices=[], label="Sub-folder", interactive=True, multiselect=False)
                 dl_file_suffix_txtbox = gr.Textbox(label="File Suffix", interactive=True, lines=1)
             with gr.Row():
-                dl_civitai_model_by_id_btn = gr.Button(value="3. Download Model", variant="primary")
+                dl_civitai_model_by_id_btn = gr.Button(value="3. Download Model", elem_id="ch_download_btn", variant="primary")
 
             dl_log_md = gr.Markdown(value="Check Console log for Downloading Status")
 

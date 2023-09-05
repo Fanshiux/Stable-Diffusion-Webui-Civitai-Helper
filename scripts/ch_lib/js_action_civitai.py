@@ -11,8 +11,6 @@ from . import model
 from . import msg_handler
 from . import util
 
-setting.load()
-
 
 # get civitai's model url and open it in browser
 # parameter: model_type, search_term

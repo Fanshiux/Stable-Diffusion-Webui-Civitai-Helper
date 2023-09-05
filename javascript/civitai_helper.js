@@ -1,77 +1,53 @@
 'use strict'
 
-function ch_gradio_version() {
-    let versions = app.querySelector('#footer .versions')
-    if (!versions) return ''
-
-    let m = versions.innerText.match(/gradio: ([\d.]+)/)
-    return m ? m[0] : ''
-}
-
 // send msg to python side by filling a hidden text box
 // then will click a button to trigger an action
 // msg is an object, not a string, will be stringify in this function
 function send_ch_py_msg(msg) {
-    // console.log("run send_ch_py_msg")
-    let js_msg_txtbox = app.querySelector('#ch_js_msg_txtbox textarea')
+    let js_msg_txtbox = $el('#ch_js_msg_txtbox textarea')
     if (js_msg_txtbox && msg) {
         // fill to msg box
         js_msg_txtbox.value = JSON.stringify(msg)
-        js_msg_txtbox.dispatchEvent(new Event('input'))
+        updateInput(js_msg_txtbox)
     }
 }
 
 // get msg from python side from a hidden textbox
 // normally this is an old msg, need to wait for a new msg
 function get_ch_py_msg() {
-    const py_msg_txtbox = app.querySelector('#ch_py_msg_txtbox textarea')
-    if (py_msg_txtbox && py_msg_txtbox.value) {
-        console.log('Get py_msg_txtbox value:', py_msg_txtbox.value)
-        return py_msg_txtbox.value
-    }
+    let py_msg_txtbox = $el('#ch_py_msg_txtbox textarea')
+    return py_msg_txtbox?.value
 }
 
 // get msg from python side from a hidden textbox
 // it will try once in every sencond, until it reach the max try times
-const get_new_ch_py_msg = (max_count = 9) => new Promise((resolve, reject) => {
-    let msg_txtbox = app.querySelector('#ch_py_msg_txtbox textarea')
-    let find_msg = false
-    let new_msg = ''
-    let count = 0, interval = setInterval(() => {
-        count++
-        if (!msg_txtbox) {
-            msg_txtbox = app.querySelector('#ch_py_msg_txtbox textarea')
-        }
-        if (msg_txtbox && msg_txtbox.value) {
-            // console.log('find py_msg_txtbox, value: ', msg_txtbox.value)
-            new_msg = msg_txtbox.value
-            find_msg = new_msg !== ''
-        }
-
-        if (find_msg) {
-            // clear msg in both sides
-            msg_txtbox.value = ''
-            msg_txtbox.dispatchEvent(new Event('input'))
-
-            resolve(new_msg)
-            clearInterval(interval)
-        } else if (count > max_count) {
-            // clear msg in both sides
-            msg_txtbox.value = ''
-            msg_txtbox.dispatchEvent(new Event('input'))
-
-            reject('')
-            clearInterval(interval)
-        }
-    }, 333)
-})
-
-function getActivePrompt() {
-    return get_uiCurrentTabContent().querySelector(`#${uiCurrentTab.innerText}_prompt textarea`)
+function get_new_ch_py_msg(max_count = 9) {
+    return new Promise((resolve, reject) => {
+        let msg_txtbox = $el('#ch_py_msg_txtbox textarea')
+        let new_msg = ''
+        let count = 0, interval = setInterval(() => {
+            if (msg_txtbox && msg_txtbox.value) {
+                new_msg = msg_txtbox.value
+            }
+            if (new_msg || ++count > max_count) {
+                clearInterval(interval)
+                // clear msg in both sides (client & server)
+                msg_txtbox.value = ''
+                updateInput(msg_txtbox)
+                if (new_msg) {
+                    resolve(new_msg)
+                } else {
+                    reject('')
+                }
+            }
+        }, 333)
+    })
 }
 
-function getActiveNegativePrompt() {
-    return get_uiCurrentTabContent().querySelector(`#${uiCurrentTab.innerText}_neg_prompt textarea`)
+function getActivePrompt(neg) {
+    let tab = uiCurrentTab.innerText
+    if (neg) tab += '_neg'
+    return get_uiCurrentTabContent().querySelector(`#${tab}_prompt textarea`)
 }
 
 // button's click function
@@ -84,9 +60,7 @@ async function open_model_url(event, model_type, search_term) {
     send_ch_py_msg({
         action: 'open_url',
         search_term,
-        model_type,
-        prompt: '',
-        neg_prompt: ''
+        model_type
     })
     try {
         btn.click();
@@ -132,7 +106,7 @@ function use_preview_prompt(event, model_type, search_term) {
         'model_type': model_type,
         'search_term': search_term,
         'prompt': getActivePrompt().value,
-        'neg_prompt': getActiveNegativePrompt().value
+        'neg_prompt': getActivePrompt(1).value
     })
 
     // Click the hidden button
@@ -176,8 +150,6 @@ async function delete_model(event, model_type, search_term) {
 
 // download model's new version into SD at python side
 function ch_dl_model_new_version(event, model_path, version_id, download_url) {
-    console.log('start ch_dl_model_new_version')
-
     // must confirm before downloading
     let dl_confirm = '\nConfirm to download.\n\nCheck Download Model Section\'s log and console log for detail.'
     if (!confirm(dl_confirm)) return
@@ -224,7 +196,7 @@ function update_tab_cards(model_type, container) {
         // additional node
         let additional_node = card.querySelector('.actions .additional')
         if (additional_node.childElementCount >= 4) {
-            console.log('buttons all ready added, just quit')
+            // console.log('buttons all ready added, just quit')
             return
         }
 
@@ -302,7 +274,7 @@ function checkPeriodically(tab_prefix, model_type) {
     let n = 5
     function check() {
         let len = $el(container_id + ' .additional').childElementCount
-        console.info('checkPeriodically, cards: ', len)
+        // console.info('checkPeriodically, cards: ', len)
         if (len >= 4 && n-- > 0) {
             setTimeout(check, 1000)
             return
@@ -318,6 +290,13 @@ async function check_clipboard() {
     if (text.startsWith('https://civitai.com/models/')) {
         let el = document.querySelector('#model_download_url_txt')
         let textarea = el.querySelector('textarea')
+        if (textarea.value == text) {
+            let version = $id('ch_dl_all_ckb').previousElementSibling.querySelector('input')
+            if (version.value) {
+                $id('ch_download_btn')?.click()
+            }
+            return
+        }
         textarea.value = text
         updateInput(textarea)
         el.querySelector('button').click()
@@ -326,8 +305,9 @@ async function check_clipboard() {
 
 // shotcut key event listener
 addEventListener('keydown', e => {
-    if (e.key == 'x' && uiCurrentTab.innerText == 'Civitai Helper') {
-        check_clipboard()
+    if (uiCurrentTab.innerText != 'Civitai Helper') return
+    switch (e.key) {
+        case 'x': check_clipboard()
     }
 })
 
