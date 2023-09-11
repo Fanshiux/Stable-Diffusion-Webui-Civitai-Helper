@@ -181,7 +181,7 @@ const model_type_mapping = {
 }
 
 function createAdditionalBtn(props) {
-    let el = createEl('a','civitai-helper-action')
+    let el = createEl('a','ch-action')
     Object.assign(el, props)
     el.setAttribute('onclick', props.onclick)
     return el
@@ -305,7 +305,7 @@ async function check_clipboard() {
 
 // shotcut key event listener
 addEventListener('keydown', e => {
-    if (uiCurrentTab.innerText != 'Civitai Helper') return
+    if (uiCurrentTab?.innerText != 'Civitai Helper') return
     switch (e.key) {
         case 'x': check_clipboard()
     }

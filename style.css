@@ -12,19 +12,19 @@ blockquote ol {
 .ch_box .gradio-row + .gradio-row {
     margin-top: .75em;
 }
-.civitai-helper-action {
+.ch-action {
     display: inline-block;
     vertical-align: middle;
+    opacity: brightness(.8);
     font-size: 1.8em;
-    opacity: .7;
 }
-.civitai-helper-action:hover {
-    filter: drop-shadow(2px 4px 6px black);
-    filter: brightness(1.25);
-    opacity: 1;
+.ch-action:hover {
+    filter: brightness(1.25)
 }
-.civitai-helper-action:nth-child(2) {
-    /* font-size: 3.25em; */
+.ch-action:active {
+    filter: brightness(.8)
+}
+.ch-action:nth-child(2) {
     line-height: 0;
     margin: 0 0.1em;
 }
@@ -32,14 +32,14 @@ blockquote ol {
     height: 8rem !important;
     width: 8rem !important;
 }
-.extra-network-thumbs .civitai-helper-action {
+.extra-network-thumbs .ch-action {
     background-image: none !important;
     display: inline-block !important;
     position: static !important;
     font-size: 1.25em !important;
     line-height: 1.25em;
 }
-.extra-network-thumbs .civitai-helper-action:nth-child(2) {
+.extra-network-thumbs .ch-action:nth-child(2) {
     font-size: 2em !important;
     height: 1.35em !important;
     margin-left: 0.25em;

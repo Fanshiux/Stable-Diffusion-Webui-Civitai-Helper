@@ -5,7 +5,6 @@ import time
 import os
 import re
 import requests
-from functools import lru_cache
 from . import model
 from . import setting
 from . import util
@@ -72,7 +71,6 @@ def get_model_info_by_hash(model_hash: str):
 
 
 # caching recent results
-@lru_cache(maxsize=4)
 def get_model_info_by_id(model_id: str):
     if not model_id:
         util.printD("id is empty")
@@ -589,14 +587,19 @@ def delete_model_by_search_term(model_type: str, search_term: str):
     model_info_filename = model_info_base + suffix + model.info_ext
     model_info_filepath = os.path.join(model_folder, model_info_filename)
 
-    model_image_filepath = os.path.join(model_folder, model_info_base + ".preview.png")
+    for ext in ["png", "jpg", "jpeg", "webp"]:
+        model_image_filepath = os.path.join(model_folder, model_info_base + ".preview." + ext)
+        if os.path.isfile(model_image_filepath):
+            os.remove(model_image_filepath)
+
+    model_json_filepath = os.path.join(model_folder, model_info_base + ".json")
     model_filename = os.path.normpath(model_folder + search_term)
 
     if os.path.isfile(model_info_filepath):
         os.remove(model_info_filepath)
 
-    if os.path.isfile(model_image_filepath):
-        os.remove(model_image_filepath)
+    if os.path.isfile(model_json_filepath):
+        os.remove(model_json_filepath)
 
     result = False
     if os.path.isfile(model_filename):
