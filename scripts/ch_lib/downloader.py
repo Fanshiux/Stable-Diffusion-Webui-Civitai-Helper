@@ -136,8 +136,6 @@ def dl(url, folder, filename=None, filepath=None):
         # rename file
         os.rename(dl_filepath, filepath)
 
-    print()
-
     util.printD(f"File save to: {filepath}")
     return filepath
 

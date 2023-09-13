@@ -507,6 +507,8 @@ def save_info_and_preview_image(filepath: str, version_info: dict, max_size_prev
     output = "Done, model save to: " + util.shorten_path(filepath)
     util.printD(output)
 
+    print()
+
     return output
 
 
