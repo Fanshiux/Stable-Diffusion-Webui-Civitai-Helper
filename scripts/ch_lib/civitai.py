@@ -5,6 +5,7 @@ import time
 import os
 import re
 import requests
+import urllib.parse
 from . import model
 from . import setting
 from . import util
@@ -615,6 +616,6 @@ def delete_model_by_search_term(model_type: str, search_term: str):
 def get_url_from_base_url(url):
     base_url = setting.data["general"]["base_url"]
     if base_url:
-        return base_url if base_url[-1] == "/" else base_url + "/" + url
+        return urllib.parse.urljoin(base_url, urllib.parse.urlparse(url).path)
     else:
         return url
