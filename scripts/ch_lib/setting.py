@@ -1,8 +1,8 @@
 # -*- coding: UTF-8 -*-
 # collecting settings to here
 import json
-import os
 import modules.scripts as scripts
+import os
 from . import util
 
 name = "setting.json"

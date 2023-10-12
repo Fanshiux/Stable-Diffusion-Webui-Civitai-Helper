@@ -4,9 +4,9 @@ import time
 
 import os
 import requests
-from . import setting
-from . import util
+from modules import shared
 from . import civitai
+from . import util
 
 dl_ext = ".downloading"
 
@@ -33,15 +33,14 @@ def dl(url, folder, filename=None, filepath=None):
         if filename:
             filepath = os.path.join(folder, filename)
 
-    if setting.data["tool"]["aria2rpc"]["enable"]:
-        aria2rpc = setting.data["tool"]["aria2rpc"]
-        aria2rpc_url = f"http://{aria2rpc['host']}:{aria2rpc['port']}/jsonrpc"
+    if shared.opts.data.get("ch_aria2rpc_enable", False):
+        aria2rpc_url = f"http://{shared.opts.data.get('ch_aria2rpc_host')}:{shared.opts.data.get('ch_aria2rpc_port')}/jsonrpc"
         params = {
             "id": "civitai",
             "jsonrpc": "2.0",
             "method": "aria2.addUri",
             "params": [
-                f"token:{aria2rpc['secret']}",
+                f"token:{shared.opts.data.get('ch_aria2rpc_secret')}",
                 [url],
                 {
                     "out": filename,
@@ -53,16 +52,17 @@ def dl(url, folder, filename=None, filepath=None):
             gid = requests.post(aria2rpc_url, json=params).json()["result"]
             params["params"] = params["params"][:1]
             params["params"].append(gid)
-            params["params"].append(["totalLength", "completedLength", "downloadSpeed", "files"])
+            params["params"].append(["status", "totalLength", "completedLength", "downloadSpeed", "files"])
             params["method"] = "aria2.tellStatus"
             while True:
                 try:
                     print()
                     request = requests.post(aria2rpc_url, json=params).json()
-                    if "error" in request:
-                        util.printD("Download closed")
-                        return
                     result = request["result"]
+                    if "error" in request or result["status"] is "paused":
+                        filepath = result["files"][0]["path"]
+                        util.printD(f"Oops! file downloading incomplete: {filepath}")
+                        return
                     total_size = int(result["totalLength"])
                     downloaded_size = int(result["completedLength"])
                     if 0 < total_size == downloaded_size:
@@ -74,7 +74,8 @@ def dl(url, folder, filename=None, filepath=None):
                     ratio = downloaded_size / total_size
                     progress = int(100 * ratio)
                     sys.stdout.write("\r%d%%|%s%s|\t%d MB" % (
-                        progress, '█' * int(ratio * terminal_size), ' ' * int((1 - ratio) * terminal_size), download_speed))
+                        progress, '█' * int(ratio * terminal_size), ' ' * int((1 - ratio) * terminal_size),
+                        download_speed))
                     sys.stdout.flush()
                     time.sleep(1)
                 except Exception:
@@ -160,7 +161,8 @@ def get_size_and_name(url):
     r = requests.get(url, stream=True, headers=util.def_headers)
     # get file size
     total_size = int(r.headers['Content-Length'])
-    cd = r.headers["Content-Disposition"]
+    # headers default is decoded with latin1, so need to re-decode it with utf-8
+    cd = r.headers["Content-Disposition"].encode('latin1').decode('utf-8', errors='ignore')
     server_filename = filename_from_content_disposition(cd)
 
     return server_filename, total_size, cd

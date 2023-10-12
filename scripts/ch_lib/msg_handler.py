@@ -5,7 +5,7 @@ from . import util
 
 # action list
 js_actions = ("open_url", "add_trigger_words", "use_preview_prompt", "delete_model", "dl_model_new_version")
-py_actions = "open_url"
+py_actions = ("open_url", "delete_model")
 
 
 # handle request from javascript

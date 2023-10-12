@@ -1,15 +1,15 @@
 # -*- coding: UTF-8 -*-
-import os
-import io
 import hashlib
+import io
+import os
 import requests
 import shutil
-
+from . import util
 
 def_headers = {
     'User-Agent': 'Mozilla/5.0 (iPad; CPU OS 12_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148'
 }
-version = "1.6.4"
+version = "1.8.2"
 
 
 # print for debugging
@@ -37,12 +37,12 @@ def gen_file_sha256(filename):
             h.update(block)
 
     hash_value = h.hexdigest()
-    printD(f"sha256: {hash_value}, size: {hr_size(length)}")
+    printD(f"sha256: {hash_value} [{util.hr_size(length)}]")
     return hash_value
 
 
 # get preview image
-def download_file(url, path):
+def download_file(url: str, path):
     printD("Downloading: " + url)
     # get file
     r = requests.get(url, stream=True, headers=def_headers)
@@ -100,7 +100,7 @@ def get_relative_path(item_path: str, parent_path: str) -> str:
 
 
 # get a relative path
-def shorten_path(filepath:str) -> str:
+def shorten_path(filepath: str) -> str:
     ei = filepath.find('embeddings' + os.sep)
     mi = filepath.find("models" + os.sep)
     if ei >= 0:
@@ -122,4 +122,3 @@ def hr_size(size, decimal_places=2):
 # Get file_name from file_strs
 def get_file_names_from_file_strs(file_strs: list) -> str:
     return ["_".join(file_str.split("_")[:-1]) for file_str in file_strs]
-

@@ -6,14 +6,13 @@ from scripts.ch_lib import civitai
 from scripts.ch_lib import js_action_civitai
 from scripts.ch_lib import model
 from scripts.ch_lib import model_action_civitai
-from scripts.ch_lib import setting
 from scripts.ch_lib import util
 
 import gradio as gr
 import modules
 import modules.scripts as scripts
 import os
-from modules import script_callbacks
+from modules import script_callbacks, shared
 
 # init
 
@@ -24,7 +23,37 @@ root_path = os.getcwd()
 extension_path = scripts.basedir()
 
 model.get_custom_model_folder()
-setting.load()
+
+
+# Setting now cannot be saved from extension tab
+# All settings now must be saved from setting page.
+def on_ui_settings():
+    ch_section = ("civitai_helper", "Civitai Helper")
+    # settings
+    shared.opts.add_option("ch_max_size_preview",
+                           shared.OptionInfo(True, "Download Max Size Preview", gr.Checkbox, {"interactive": True},
+                                             section=ch_section))
+    shared.opts.add_option("ch_skip_nsfw_preview",
+                           shared.OptionInfo(False, "Skip NSFW Preview Images", gr.Checkbox, {"interactive": True},
+                                             section=ch_section))
+    shared.opts.add_option("ch_open_url_with_js",
+                           shared.OptionInfo(True, "Open Url At Client Side", gr.Checkbox, {"interactive": True},
+                                             section=ch_section))
+    shared.opts.add_option("ch_base_url", shared.OptionInfo("https://civitai.com", "Civitai Base Url", gr.Textbox,
+                                                            {"interactive": True, "lines": 1,
+                                                             "placeholder": "https://civitai.com"}, section=ch_section))
+    shared.opts.add_option("ch_aria2rpc_enable",
+                           shared.OptionInfo(False, "Aria2rpc Enable", gr.Checkbox, {"interactive": True},
+                                             section=ch_section))
+    shared.opts.add_option("ch_aria2rpc_host", shared.OptionInfo("127.0.0.1", "Aria2rpc Host", gr.Textbox,
+                                                                 {"interactive": True, "lines": 1,
+                                                                  "placeholder": "127.0.0.1"}, section=ch_section))
+    shared.opts.add_option("ch_aria2rpc_port",
+                           shared.OptionInfo("6800", "Aria2rpc Host", gr.Textbox, {"interactive": True, "lines": 1},
+                                             section=ch_section))
+    shared.opts.add_option("ch_aria2rpc_secret",
+                           shared.OptionInfo("", "Aria2rpc Secret", gr.Textbox, {"interactive": True, "lines": 1},
+                                             section=ch_section))
 
 
 def on_ui_tabs():
@@ -43,7 +72,41 @@ def on_ui_tabs():
     img2img_prompt = modules.ui.img2img_paste_fields[0][0]
     img2img_neg_prompt = modules.ui.img2img_paste_fields[1][0]
 
+    # get settings
+    max_size_preview = shared.opts.data.get("ch_max_size_preview", True)
+    skip_nsfw_preview = shared.opts.data.get("ch_skip_nsfw_preview", False)
+    open_url_with_js = shared.opts.data.get("ch_open_url_with_js", True)
+
+    util.printD("Settings:")
+    util.printD("max_size_preview: " + str(max_size_preview))
+    util.printD("skip_nsfw_preview: " + str(skip_nsfw_preview))
+    util.printD("open_url_with_js: " + str(open_url_with_js))
+
     # ====Event's function====
+    def scan_model(scan_model_types):
+        return model_action_civitai.scan_model(scan_model_types, max_size_preview, skip_nsfw_preview)
+
+    def get_model_info_by_input(model_type_drop, model_name_drop, model_url_or_id_txtbox):
+        return model_action_civitai.get_model_info_by_input(
+            model_type_drop, model_name_drop, model_url_or_id_txtbox, max_size_preview, skip_nsfw_preview)
+
+    def dl_model_by_input(dl_model_info, dl_model_type_txtbox, dl_subfolder_drop, dl_version_drop, dl_all_ckb):
+        return model_action_civitai.dl_model_by_input(
+            dl_model_info, dl_model_type_txtbox, dl_subfolder_drop, dl_version_drop, dl_all_ckb, max_size_preview,
+            skip_nsfw_preview)
+
+    def check_models_new_version_to_md(dl_model_info, dl_model_type_txtbox, dl_subfolder_drop, dl_version_drop,
+                                       dl_all_ckb):
+        return model_action_civitai.check_models_new_version_to_md(
+            dl_model_info, dl_model_type_txtbox, dl_subfolder_drop, dl_version_drop, dl_all_ckb, max_size_preview,
+            skip_nsfw_preview)
+
+    def open_model_url(js_msg_txtbox):
+        return js_action_civitai.open_model_url(js_msg_txtbox, open_url_with_js)
+
+    def dl_model_new_version(js_msg_txtbox, max_size_preview):
+        return js_action_civitai.dl_model_new_version(js_msg_txtbox, max_size_preview, skip_nsfw_preview)
+
     def get_model_names_by_input(model_type, empty_info_only):
         names = civitai.get_model_names_by_input(model_type, empty_info_only)
         return model_name_drop.update(choices=names)
@@ -96,14 +159,6 @@ def on_ui_tabs():
 
     # ====UI====
     with gr.Blocks(analytics_enabled=False) as civitai_helper:
-        # with gr.Blocks(css=".block.padded {padding: 10px !important}") as civitai_helper:
-
-        # init
-        max_size_preview = setting.data["model"]["max_size_preview"]
-        skip_nsfw_preview = setting.data["model"]["skip_nsfw_preview"]
-        open_url_with_js = setting.data["general"]["open_url_with_js"]
-        base_url = setting.data["general"]["base_url"]
-        aria2rpc = setting.data["tool"]["aria2rpc"]
 
         model_types = list(model.folders.keys())
         no_info_model_names = civitai.get_model_names_by_input("ckp", False)
@@ -114,10 +169,6 @@ def on_ui_tabs():
         with gr.Box(elem_classes="ch_box"):
             gr.Markdown("### Scan Models for Civitai")
             with gr.Row():
-                max_size_preview_ckb = gr.Checkbox(label="Download Max Size Preview", value=max_size_preview,
-                                                   elem_id="ch_max_size_preview_ckb")
-                skip_nsfw_preview_ckb = gr.Checkbox(label="Skip NSFW Preview Images", value=skip_nsfw_preview,
-                                                    elem_id="ch_skip_nsfw_preview_ckb")
                 scan_model_types_ckbg = gr.CheckboxGroup(choices=model_types, value=model_types, show_label=False)
                 scan_model_civitai_btn = gr.Button(value="Scan", variant="primary", elem_id="ch_scan_model_civitai_btn")
 
@@ -133,7 +184,7 @@ def on_ui_tabs():
                                               multiselect=False)
 
             with gr.Row():
-                model_url_or_id_txtbox = gr.Textbox(placeholder="Civitai URL", lines=1, show_label=False)
+                model_url_or_id_txtbox = gr.Textbox(placeholder="Civitai URL", show_label=False)
                 empty_info_only_ckb = gr.Checkbox(label="Only Show Models have no Info", value=False,
                                                   elem_id="ch_empty_info_only_ckb")
                 get_civitai_model_info_by_id_btn = gr.Button(value="Get Model Info from Civitai", variant="primary")
@@ -142,19 +193,21 @@ def on_ui_tabs():
         with gr.Box(elem_classes="ch_box"):
             gr.Markdown("### Download Model")
             with gr.Row(elem_id="model_download_url_txt"):
-                dl_model_url_or_id_txtbox = gr.Textbox(placeholder="Civitai URL", lines=1, show_label=False)
+                dl_model_url_or_id_txtbox = gr.Textbox(placeholder="Civitai URL", show_label=False)
                 dl_model_info_btn = gr.Button(value="1. Get Model Info by Civitai Url", variant="primary")
 
             gr.Markdown(value="<b>2. Pick Subfolder and Model Version</b>")
             with gr.Row():
-                dl_model_name_txtbox = gr.Textbox(label="Model Name", interactive=False, lines=1)
-                dl_model_type_txtbox = gr.Textbox(label="Model Type", interactive=False, lines=1)
-                dl_version_drop = gr.Dropdown(choices=[], label="Model Version", interactive=True, multiselect=False)
-                dl_files_drop = gr.Dropdown(choices=[], label="Files", interactive=True, multiselect=True)
-                dl_subfolder_drop = gr.Dropdown(choices=[], label="Sub-folder", interactive=True, multiselect=False)
+                dl_model_name_txtbox = gr.Textbox(label="Model Name", interactive=False, elem_id="ch_model_name")
+                dl_model_type_txtbox = gr.Textbox(label="Model Type", interactive=False)
+                dl_version_drop = gr.Dropdown(label="Model Version", interactive=True, multiselect=False,
+                                              elem_id="ch_subfolder")
+                dl_files_drop = gr.Dropdown(label="Files", interactive=True, multiselect=True)
+                dl_subfolder_drop = gr.Dropdown(label="Sub-folder", interactive=True, multiselect=False)
                 dl_file_suffix_txtbox = gr.Textbox(label="File Suffix", interactive=True, lines=1)
             with gr.Row():
-                dl_civitai_model_by_id_btn = gr.Button(value="3. Download Model", elem_id="ch_download_btn", variant="primary")
+                dl_civitai_model_by_id_btn = gr.Button(value="3. Download Model", elem_id="ch_download_btn",
+                                                       variant="primary")
 
             dl_log_md = gr.Markdown(value="Check Console log for Downloading Status")
 
@@ -168,24 +221,9 @@ def on_ui_tabs():
             check_models_new_version_log_md = gr.HTML("It takes time, just wait. Check console log for detail")
 
         with gr.Box(elem_classes="ch_box"):
-            gr.Markdown("### Aria2 Downloader")
-            with gr.Row():
-                aria2rpc_host = gr.Textbox(label="Host", interactive=True, lines=1, value=aria2rpc["host"])
-                aria2rpc_port = gr.Textbox(label="Port", interactive=True, lines=1, value=aria2rpc["port"])
-                aria2rpc_secret = gr.Textbox(label="Secret", interactive=True, lines=1, value=aria2rpc["secret"])
-
-            gr.Markdown("### Other Setting")
-            with gr.Row():
-                open_url_with_js_ckb = gr.Checkbox(label="Open Url At Client Side", value=open_url_with_js)
-                dl_all_ckb = gr.Checkbox(label="Download All files", value=False, elem_id="ch_dl_all_ckb")
-                aria2rpc_enable = gr.Checkbox(label="Enable Aria2 Downloader", value=aria2rpc["enable"], elem_id="ch_aria2rpc_enable")
-
-            with gr.Row():
-                base_url_txtbox = gr.Textbox(placeholder="Base URL", interactive=True, show_label=False, lines=1,
-                                             value=base_url)
-                save_setting_btn = gr.Button(value="Save Setting", variant="primary")
-
-            general_log_md = gr.Markdown()
+            gr.Markdown("### Other")
+            # save_setting_btn = gr.Button(value="Save Setting")
+            gr.Markdown(value="Settings are moved into Settings Tab->Civitai Helper section")
 
         # ====Footer====
         gr.Markdown(f"<center>version:{util.version}</center>")
@@ -195,49 +233,60 @@ def on_ui_tabs():
         py_msg_txtbox = gr.Textbox(label="Response Msg From Python", visible=False, lines=1, elem_id="ch_py_msg_txtbox")
 
         js_open_url_btn = gr.Button(value="Open Model Url", visible=False, elem_id="ch_js_open_url_btn")
-        js_add_trigger_words_btn = gr.Button(value="Add Trigger Words", visible=False, elem_id="ch_js_add_trigger_words_btn")
-        js_use_preview_prompt_btn = gr.Button(value="Use Prompt from Preview Image", visible=False, elem_id="ch_js_use_preview_prompt_btn")
+        js_add_trigger_words_btn = gr.Button(value="Add Trigger Words", visible=False,
+                                             elem_id="ch_js_add_trigger_words_btn")
+        js_use_preview_prompt_btn = gr.Button(value="Use Prompt from Preview Image", visible=False,
+                                              elem_id="ch_js_use_preview_prompt_btn")
         js_use_delete_model_btn = gr.Button(value="Delete Model", visible=False, elem_id="ch_js_delete_model_btn")
-        js_dl_model_new_version_btn = gr.Button(value="Download Model's new version", visible=False, elem_id="ch_js_dl_model_new_version_btn")
+        js_dl_model_new_version_btn = gr.Button(value="Download Model's new version", visible=False,
+                                                elem_id="ch_js_dl_model_new_version_btn")
 
         # ====events====
         # Scan Models for Civitai
-        scan_model_civitai_btn.click(model_action_civitai.scan_model,
-                                     inputs=[scan_model_types_ckbg, max_size_preview_ckb, skip_nsfw_preview_ckb],
-                                     outputs=scan_model_log_md)
+        scan_model_civitai_btn.click(scan_model, inputs=[scan_model_types_ckbg], outputs=scan_model_log_md)
 
         # Get Civitai Model Info by Model Page URL
-        model_type_drop.change(get_model_names_by_input, inputs=[model_type_drop, empty_info_only_ckb], outputs=model_name_drop)
-        empty_info_only_ckb.change(get_model_names_by_input, inputs=[model_type_drop, empty_info_only_ckb], outputs=model_name_drop)
+        model_type_drop.change(get_model_names_by_input, inputs=[model_type_drop, empty_info_only_ckb],
+                               outputs=model_name_drop)
+        empty_info_only_ckb.change(get_model_names_by_input, inputs=[model_type_drop, empty_info_only_ckb],
+                                   outputs=model_name_drop)
 
-        get_civitai_model_info_by_id_btn.click(model_action_civitai.get_model_info_by_input, inputs=[model_type_drop, model_name_drop, model_url_or_id_txtbox, max_size_preview_ckb, skip_nsfw_preview_ckb], outputs=get_model_by_id_log_md)
+        get_civitai_model_info_by_id_btn.click(get_model_info_by_input,
+                                               inputs=[model_type_drop, model_name_drop, model_url_or_id_txtbox],
+                                               outputs=get_model_by_id_log_md)
 
         # Download Model
-        dl_version_drop.change(get_files_by_version_str, inputs=[dl_version_drop, dl_model_info], outputs=[dl_files_drop])
-        dl_subfolder_drop.change(check_duplicate_files, inputs=[dl_files_drop, dl_subfolder_drop, dl_model_type_txtbox, dl_model_info, dl_version_drop], outputs=[dl_log_md, dl_file_suffix_txtbox, dl_civitai_model_by_id_btn])
-        dl_files_drop.change(check_duplicate_files, inputs=[dl_files_drop, dl_subfolder_drop, dl_model_type_txtbox, dl_model_info, dl_version_drop], outputs=[dl_log_md, dl_file_suffix_txtbox, dl_civitai_model_by_id_btn])
+        dl_version_drop.change(get_files_by_version_str, inputs=[dl_version_drop, dl_model_info],
+                               outputs=[dl_files_drop])
+        dl_subfolder_drop.change(check_duplicate_files,
+                                 inputs=[dl_files_drop, dl_subfolder_drop, dl_model_type_txtbox, dl_model_info,
+                                         dl_version_drop],
+                                 outputs=[dl_log_md, dl_file_suffix_txtbox, dl_civitai_model_by_id_btn])
+        dl_files_drop.change(check_duplicate_files,
+                             inputs=[dl_files_drop, dl_subfolder_drop, dl_model_type_txtbox, dl_model_info,
+                                     dl_version_drop],
+                             outputs=[dl_log_md, dl_file_suffix_txtbox, dl_civitai_model_by_id_btn])
 
-        dl_model_info_btn.click(get_model_info_by_url, inputs=dl_model_url_or_id_txtbox, outputs=[dl_model_info, dl_model_name_txtbox, dl_model_type_txtbox, dl_subfolder_drop, dl_version_drop])
-        dl_civitai_model_by_id_btn.click(model_action_civitai.dl_model_by_input, inputs=[dl_model_info, dl_model_type_txtbox, dl_subfolder_drop, dl_version_drop, dl_files_drop, dl_file_suffix_txtbox, dl_all_ckb, max_size_preview_ckb, skip_nsfw_preview_ckb], outputs=dl_log_md)
+        dl_model_info_btn.click(get_model_info_by_url, inputs=dl_model_url_or_id_txtbox,
+                                outputs=[dl_model_info, dl_model_name_txtbox, dl_model_type_txtbox, dl_subfolder_drop,
+                                         dl_version_drop])
+        dl_civitai_model_by_id_btn.click(dl_model_by_input,
+                                         inputs=[dl_model_info, dl_model_type_txtbox, dl_subfolder_drop,
+                                                 dl_version_drop, dl_files_drop, dl_file_suffix_txtbox],
+                                         outputs=dl_log_md)
 
         # Check models' new version
-        check_models_new_version_btn.click(model_action_civitai.check_models_new_version_to_md, inputs=model_types_ckbg, outputs=check_models_new_version_log_md)
-
-        # Other Setting
-        save_setting_btn.click(setting.save_from_input,
-                               inputs=[max_size_preview_ckb, skip_nsfw_preview_ckb, open_url_with_js_ckb,
-                                       base_url_txtbox, aria2rpc_enable, aria2rpc_host, aria2rpc_port, aria2rpc_secret],
-                               outputs=general_log_md)
+        check_models_new_version_btn.click(model_action_civitai.check_models_new_version_to_md, inputs=model_types_ckbg,
+                                           outputs=check_models_new_version_log_md)
 
         # js action
-        js_open_url_btn.click(js_action_civitai.open_model_url, inputs=[js_msg_txtbox], outputs=py_msg_txtbox)
+        js_open_url_btn.click(open_model_url, inputs=[js_msg_txtbox], outputs=py_msg_txtbox)
         js_add_trigger_words_btn.click(js_action_civitai.add_trigger_words, inputs=[js_msg_txtbox],
                                        outputs=[txt2img_prompt, img2img_prompt])
         js_use_preview_prompt_btn.click(js_action_civitai.use_preview_image_prompt, inputs=[js_msg_txtbox],
                                         outputs=[txt2img_prompt, txt2img_neg_prompt, img2img_prompt,
                                                  img2img_neg_prompt])
-        js_dl_model_new_version_btn.click(js_action_civitai.dl_model_new_version,
-                                          inputs=[js_msg_txtbox, max_size_preview_ckb, skip_nsfw_preview_ckb],
+        js_dl_model_new_version_btn.click(js_action_civitai.dl_model_new_version, inputs=[js_msg_txtbox],
                                           outputs=dl_log_md)
         js_use_delete_model_btn.click(js_action_civitai.delete_model, inputs=[js_msg_txtbox], outputs=[py_msg_txtbox])
 
@@ -245,4 +294,5 @@ def on_ui_tabs():
     return (civitai_helper, "Civitai Helper", "civitai_helper"),
 
 
+script_callbacks.on_ui_settings(on_ui_settings)
 script_callbacks.on_ui_tabs(on_ui_tabs)

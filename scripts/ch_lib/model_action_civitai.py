@@ -1,6 +1,5 @@
 # -*- coding: UTF-8 -*-
 # handle msg between js and python side
-import time
 
 import os
 from . import civitai
@@ -48,7 +47,7 @@ def scan_model(scan_model_types, max_size_preview, skip_nsfw_preview, delay=1):
 
                     # find a model
                     # get info file
-                    info_file = base + civitai.suffix + model.info_ext
+                    info_file = base + model.info_ext
                     # check info file
                     if not os.path.isfile(info_file):
                         util.printD("Creating model info: " + util.shorten_path(filepath))
@@ -62,9 +61,7 @@ def scan_model(scan_model_types, max_size_preview, skip_nsfw_preview, delay=1):
 
                         # use this sha256 to get model info from civitai
                         model_info = civitai.get_model_info_by_hash(hash)
-                        if model_type == "ti":
-                            util.printD(f"Delay {delay} second for TI")
-                            time.sleep(delay)
+                        # if model_type == "ti": time.sleep(delay)
 
                         if model_info is None:
                             output = "Connect to Civitai API service failed. Wait a while and try again"
@@ -94,8 +91,8 @@ def scan_model(scan_model_types, max_size_preview, skip_nsfw_preview, delay=1):
 # output is log info to display on a markdown component
 def get_model_info_by_input(model_type, model_name, model_url_or_id, max_size_preview, skip_nsfw_preview):
     # parse model id
-    model_id = civitai.get_model_id_from_url(model_url_or_id)
-    if not model_id:
+    model_id, model_version_id = civitai.get_model_id_from_url(model_url_or_id)
+    if not model_id and not model_version_id:
         output = "failed to parse model id from url: " + model_url_or_id
         util.printD(output)
         return output
@@ -116,11 +113,14 @@ def get_model_info_by_input(model_type, model_name, model_url_or_id, max_size_pr
 
     # get an info file path
     base, ext = os.path.splitext(model_path)
-    info_file = base + civitai.suffix + model.info_ext
+    info_file = base + model.info_ext
 
     # get model info    
-    # we call it model_info, but in civitai, it is actually version info
-    model_info = civitai.get_version_info_by_model_id(model_id)
+    if model_version_id:
+        model_info = civitai.get_version_info_by_version_id(model_version_id)
+    else:
+        # we call it model_info, but in civitai, it is actually version info
+        model_info = civitai.get_version_info_by_model_id(model_id)
 
     if not model_info:
         output = "failed to get model info from url: " + model_url_or_id
@@ -192,7 +192,7 @@ def get_model_info_by_url(model_url_or_id: str):
     util.printD("Fetching model info: " + model_url_or_id)
 
     # parse model id
-    model_id = civitai.get_model_id_from_url(model_url_or_id)
+    model_id, _ = civitai.get_model_id_from_url(model_url_or_id)
     if not model_id:
         util.printD("failed to parse model id from url or id")
         return
@@ -241,7 +241,7 @@ def get_model_info_by_url(model_url_or_id: str):
 
     versions = []
     for version in model_versions:
-        # version name can not be used as an id
+        # version name cannot be used as an id
         # version id is not readable, so
         #  we use name_id as version string
         version = version["name"] + "_" + str(version["id"])
@@ -498,7 +498,7 @@ def dl_model_by_input(model_info: dict, model_type: str, subfolder_str: str, ver
 def save_info_and_preview_image(filepath: str, version_info: dict, max_size_preview: bool, skip_nsfw_preview: bool):
     # write version info to file
     base, ext = os.path.splitext(filepath)
-    info_file = base + civitai.suffix + model.info_ext
+    info_file = base + model.info_ext
     model.write_model_info(info_file, version_info)
 
     # then, get preview image
