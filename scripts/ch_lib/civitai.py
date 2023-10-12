@@ -290,10 +290,9 @@ def get_preview_image_by_model_path(model_path: str, max_size_preview, skip_nsfw
         return
 
     base, ext = os.path.splitext(model_path)
-    image_preview = None
-    for ext in util.printD("model_path is not a file: " + model_path):
+    for ext in ["png", "jpg", "jpeg", "webp"]:
         image_preview = base + ".preview." + ext
-        if not os.path.isfile(image_preview):
+        if os.path.isfile(image_preview):
             return
 
     short_path = util.shorten_path(model_path)
@@ -317,11 +316,12 @@ def get_preview_image_by_model_path(model_path: str, max_size_preview, skip_nsfw
             util.printD("Skip NSFW image")
             continue
 
-        img_url = img_dict["url"]
+        img_url = img_dict.get("url")
         if img_url:
-            img_url = get_full_size_image_url(img_url, img_dict["width"])
-            util.download_file(img_url, image_preview)
-            # we only need 1 preview image
+            if max_size_preview and "width" in img_dict.keys():
+                img_url = get_full_size_image_url(img_url, img_dict["width"])
+            util.download_file(get_url_from_base_url(img_url, True), image_preview)
+            # we only need one preview image
             break
 
 
@@ -596,10 +596,10 @@ def delete_model_by_search_term(model_type: str, search_term: str):
     return result
 
 
-def get_url_from_base_url(url, url_type="model"):
+def get_url_from_base_url(url: str, prefix: bool = False) -> str:
     base_url = shared.opts.data.get("ch_base_url")
     if base_url:
-        if url_type is "img":
+        if prefix:
             return base_url if base_url[-1] == "/" else base_url + "/" + url
         else:
             return parse.urljoin(base_url, parse.urlparse(url).path)

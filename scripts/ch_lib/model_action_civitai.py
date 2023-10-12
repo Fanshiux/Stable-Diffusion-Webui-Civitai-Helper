@@ -287,7 +287,7 @@ def get_ver_info_by_ver_str(version_str: str, model_info: dict):
     # find version by version_str
     version = None
     for ver in model_version:
-        # version name can not be used as an id
+        # version name cannot be used as an id
         # version id is not readable, so
         #  we use name_id as version string
         ver_str = ver["name"] + "_" + str(ver["id"])
@@ -331,7 +331,7 @@ def get_id_and_dl_url_by_version_str(version_str: str, model_info: dict):
     # find version by version_str
     version = None
     for ver in model_versions:
-        # version name can not be used as an id
+        # version name cannot be used as an id
         # version id is not readable, so
         #  we use name_id as version string
         ver_str = ver["name"] + "_" + str(ver["id"])
@@ -529,7 +529,7 @@ def get_file_strs_by_version_str(version_str: str, model_info: dict):
     # find version by version_str
     file_strs = []
     for file in files:
-        # version name can not be used as an id
+        # version name cannot be used as an id
         # version id is not readable, so
         #  we use name_id as version string
         file_str = file["name"] + "_" + str(file["id"])
@@ -562,7 +562,7 @@ def get_download_url_by_file_strs(file_strs: str, ver_info: dict, file_suffix: s
     file_suffix = "_" + file_suffix if file_suffix else ""
     download_urls = []
     for file in files:
-        # version name can not be used as an id
+        # version name cannot be used as an id
         # version id is not readable, so
         #  we use name_id as version string
         file_s = file["name"] + "_" + str(file["id"])
