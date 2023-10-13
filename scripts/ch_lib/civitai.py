@@ -59,7 +59,7 @@ def get_model_info_by_id(model_id: str):
 
     try:
         content = util.request(url_dict["modelId"] + str(model_id), to_json=True)
-    except RequestException as e:
+    except RequestException:
         return
 
     if not content:
@@ -226,6 +226,8 @@ def get_model_id_from_url(url: str) -> list:
     model_version_id = None
     if "modelVersionId" in last_part:
         model_id, model_version_id = last_part.split("?modelVersionId=")
+        if len(parts) == 6:
+            model_id = parts[4]
     else:
         model_id = parts[4]
 

@@ -105,14 +105,14 @@ def get_model_info_by_input(model_type, model_name, model_url_or_id, max_size_pr
         util.printD(output)
         return output
 
-    model_root, model_path = result
+    _, model_path = result
     if not model_path:
         output = "model path is empty"
         util.printD(output)
         return output
 
     # get an info file path
-    base, ext = os.path.splitext(model_path)
+    base, _ = os.path.splitext(model_path)
     info_file = base + model.info_ext
 
     # get model info    
@@ -199,6 +199,7 @@ def get_model_info_by_url(model_url_or_id: str):
 
     model_info = civitai.get_model_info_by_id(model_id)
     if model_info is None:
+        util.printD(model_id)
         util.printD("Connect to Civitai API service failed. Wait a while and try again")
         return
 
