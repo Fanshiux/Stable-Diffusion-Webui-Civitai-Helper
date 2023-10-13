@@ -4,9 +4,7 @@ import time
 
 import os
 import re
-import requests
-from modules import shared
-from urllib import parse
+from requests import RequestException
 from . import model
 from . import util
 
@@ -41,25 +39,9 @@ def get_model_info_by_hash(model_hash: str):
         util.printD("hash is empty")
         return
 
-    r = requests.get(url_dict["hash"] + model_hash, headers=util.def_headers)
-    if not r.ok:
-        if r.status_code == 404:
-            # this is not a civitai model
-            util.printD("Civitai does not have this model")
-            return {}
-        else:
-            util.printD("Get error code: " + str(r.status_code))
-            util.printD(r.text)
-            return
-
-    # try to get content
     try:
-        content = r.json()
-    except Exception as e:
-        util.printD("Parse response json failed")
-        util.printD(str(e))
-        util.printD("response:")
-        util.printD(r.text)
+        content = util.request(url_dict["hash"] + model_hash, to_json=True)
+    except RequestException as e:
         return
 
     if not content:
@@ -75,25 +57,9 @@ def get_model_info_by_id(model_id: str):
         util.printD("id is empty")
         return
 
-    r = requests.get(get_url_from_base_url(url_dict["modelId"] + str(model_id)), headers=util.def_headers)
-    if not r.ok:
-        if r.status_code == 404:
-            # this is not a civitai model
-            util.printD("Civitai does not have this model")
-            return {}
-        else:
-            util.printD("Get error code: " + str(r.status_code))
-            util.printD(r.text)
-            return
-
-    # try to get content
     try:
-        content = r.json()
-    except Exception as e:
-        util.printD("Parse response json failed")
-        util.printD(str(e))
-        util.printD("response:")
-        util.printD(r.text)
+        content = util.request(url_dict["modelId"] + str(model_id), to_json=True)
+    except RequestException as e:
         return
 
     if not content:
@@ -108,25 +74,9 @@ def get_version_info_by_version_id(version_id: str):
         util.printD("id is empty")
         return
 
-    r = requests.get(get_url_from_base_url(url_dict["modelVersionId"] + str(version_id)), headers=util.def_headers)
-    if not r.ok:
-        if r.status_code == 404:
-            # this is not a civitai model
-            util.printD("Civitai does not have this model version")
-            return {}
-        else:
-            util.printD("Get error code: " + str(r.status_code))
-            util.printD(r.text)
-            return
-
-    # try to get content
     try:
-        content = r.json()
-    except Exception as e:
-        util.printD("Parse response json failed")
-        util.printD(str(e))
-        util.printD("response:")
-        util.printD(r.text)
+        content = util.request(url_dict["modelVersionId"] + str(version_id), to_json=True)
+    except RequestException as e:
         return
 
     if not content:
@@ -320,7 +270,7 @@ def get_preview_image_by_model_path(model_path: str, max_size_preview, skip_nsfw
         if img_url:
             if max_size_preview and "width" in img_dict.keys():
                 img_url = get_full_size_image_url(img_url, img_dict["width"])
-            util.download_file(get_url_from_base_url(img_url, True), image_preview)
+            util.download_file(img_url, image_preview)
             # we only need one preview image
             break
 
@@ -594,14 +544,3 @@ def delete_model_by_search_term(model_type: str, search_term: str):
         print("Error: Model not found: %s" % model_filename)
 
     return result
-
-
-def get_url_from_base_url(url: str, prefix: bool = False) -> str:
-    base_url = shared.opts.data.get("ch_base_url")
-    if base_url:
-        if prefix:
-            return base_url if base_url[-1] == "/" else base_url + "/" + url
-        else:
-            return parse.urljoin(base_url, parse.urlparse(url).path)
-    else:
-        return url

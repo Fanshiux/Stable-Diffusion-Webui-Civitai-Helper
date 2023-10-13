@@ -5,7 +5,6 @@ import time
 import os
 import requests
 from modules import shared
-from . import civitai
 from . import util
 
 dl_ext = ".downloading"
@@ -16,9 +15,6 @@ requests.packages.urllib3.disable_warnings()
 
 # output is downloaded file path
 def dl(url, folder, filename=None, filepath=None):
-    url = civitai.get_url_from_base_url(url)
-    util.printD("Start downloading: " + url)
-
     # resolve filepath
     if not filepath:
         # if filepath is not in parameter, then the folder must be in parameter
@@ -34,6 +30,8 @@ def dl(url, folder, filename=None, filepath=None):
             filepath = os.path.join(folder, filename)
 
     if shared.opts.data.get("ch_aria2rpc_enable", False):
+        url = util.get_url_from_base_url(url)
+        util.printD("Start downloading: " + url)
         aria2rpc_url = f"http://{shared.opts.data.get('ch_aria2rpc_host')}:{shared.opts.data.get('ch_aria2rpc_port')}/jsonrpc"
         params = {
             "id": "civitai",
@@ -110,7 +108,11 @@ def dl(url, folder, filename=None, filepath=None):
                 headers['Range'] = f"bytes={downloaded_size}-"
                 util.printD(f"Downloaded size: {util.hr_size(downloaded_size)}")
 
-        r = requests.get(url, stream=True, headers=headers)
+        try:
+            r = util.request(url, stream=True, download_tip=True)
+        except Exception:
+            util.printD("The model download request failed")
+            return
 
         # write to file
         with open(dl_filepath, "ab") as f:
@@ -158,7 +160,7 @@ def resolve_dl_filepath(base, ext, filepath):
 
 def get_size_and_name(url):
     # first request for header
-    r = requests.get(url, stream=True, headers=util.def_headers)
+    r = util.request(url, stream=True)
     # get file size
     total_size = int(r.headers['Content-Length'])
     # headers default is decoded with latin1, so need to re-decode it with utf-8

@@ -4,6 +4,9 @@ import io
 import os
 import requests
 import shutil
+from modules import shared
+from requests import RequestException
+from urllib import parse
 from . import util
 
 def_headers = {
@@ -43,12 +46,10 @@ def gen_file_sha256(filename):
 
 # get preview image
 def download_file(url: str, path):
-    printD("Downloading: " + url)
     # get file
-    r = requests.get(url, stream=True, headers=def_headers)
-    if not r.ok:
-        printD("Get error code: " + str(r.status_code))
-        printD(r.text)
+    try:
+        r = request(url, stream=True, prefix=True, download_tip=True)
+    except RequestException:
         return
 
     # write to file
@@ -122,3 +123,42 @@ def hr_size(size, decimal_places=2):
 # Get file_name from file_strs
 def get_file_names_from_file_strs(file_strs: list) -> str:
     return ["_".join(file_str.split("_")[:-1]) for file_str in file_strs]
+
+
+def get_url_from_base_url(url: str, prefix: bool = False) -> str:
+    base_url = shared.opts.data.get("ch_base_url")
+    if base_url:
+        if prefix:
+            url = base_url if base_url[-1] == "/" else base_url + "/" + url
+        else:
+            url = parse.urljoin(base_url, parse.urlparse(url).path)
+    return url
+
+
+# Request method
+def request(url: str, stream: bool = False, to_json: bool = False, download_tip: bool = False, prefix: bool = False):
+    url = get_url_from_base_url(url, prefix)
+    if download_tip:
+        printD("Start downloading: " + url)
+    try:
+        r = requests.get(url, stream=stream, headers=def_headers)
+        if not r.ok:
+            if r.status_code == 404:
+                util.printD("The request cannot be obtained")
+            else:
+                util.printD("Get error code: " + str(r.status_code))
+                util.printD(r.text)
+                return
+            raise RequestException()
+        if to_json:
+            try:
+                return r.json()
+            except Exception as e:
+                util.printD("Parse response json failed")
+                util.printD(str(e))
+                util.printD("response:")
+                util.printD(r.text)
+                raise RequestException()
+        return r
+    except RequestException as e:
+        util.printD(f"{url}: " + e)
