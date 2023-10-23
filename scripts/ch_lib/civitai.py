@@ -219,7 +219,7 @@ def get_model_id_from_url(url: str) -> list:
 
     if url.isnumeric():
         # is already an id
-        return None, url
+        return url, None
 
     parts = url.split('/')
     last_part = parts[-1]

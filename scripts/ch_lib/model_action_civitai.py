@@ -199,7 +199,6 @@ def get_model_info_by_url(model_url_or_id: str):
 
     model_info = civitai.get_model_info_by_id(model_id)
     if model_info is None:
-        util.printD(model_id)
         util.printD("Connect to Civitai API service failed. Wait a while and try again")
         return
 

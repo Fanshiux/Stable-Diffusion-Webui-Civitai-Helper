@@ -108,10 +108,10 @@ def get_model_path_by_type_and_name(model_type: str, model_name: str):
 # get model path by model type and search_term
 # parameter: model_type, search_term
 # return: model_path
-def get_model_path_by_search_term(model_type, search_term):
+def get_model_path_by_search_term(model_type: str, search_term: str) -> str:
     util.printD(f"Search model of {search_term} in {model_type}")
     if model_type not in folders.keys():
-        util.printD("unknow model type: " + model_type)
+        util.printD("unknown model type: " + model_type)
         return
 
     # for lora: search_term = subfolderpath + model name + ext + " " + hash. And it always start with a / even there is no sub folder
@@ -119,7 +119,23 @@ def get_model_path_by_search_term(model_type, search_term):
     # for ti: search_term = subfolderpath + model name + ext + "" + hash
     # for hyper: search_term = subfolderpath + model name
 
-    model_sub_path = search_term.split()[0]
+    has_hash = True
+    if model_type == "hyper":
+        has_hash = False
+    elif search_term.endswith(".pt") or search_term.endswith(".bin") or search_term.endswith(
+            ".safetensors") or search_term.endswith(".ckpt"):
+        has_hash = False
+
+    # remove hash
+    # model name may have multiple spaces
+    split_path = search_term.split()
+    model_sub_path = split_path[0]
+    if has_hash and len(split_path) > 1:
+        model_sub_path = ""
+        for i in range(0, len(split_path) - 1):
+            model_sub_path += split_path[i] + " "
+
+        model_sub_path = model_sub_path.strip()
     if model_sub_path[:1] == "/":
         model_sub_path = model_sub_path[1:]
 
