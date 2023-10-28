@@ -271,7 +271,7 @@ def on_ui_tabs():
                     elem_id="ch_subfolder")
                 dl_files_drop = gr.Dropdown(label="Files", interactive=True, multiselect=True)
                 dl_subfolder_drop = gr.Dropdown(label="Sub-folder", interactive=True, multiselect=False)
-                dl_file_suffix_txtbox = gr.Textbox(label="File Suffix", interactive=True, lines=1)
+                dl_file_suffix_txtbox = gr.Textbox(label="File Name Suffix", interactive=True, lines=1)
             with gr.Row():
                 dl_civitai_model_by_id_btn = gr.Button(
                     value="3. Download Model",
@@ -281,18 +281,16 @@ def on_ui_tabs():
             dl_log_md = gr.Markdown(value="Check Console log for Downloading Status")
 
         with gr.Box(elem_classes="ch_box"):
-            gr.Markdown("### Check models' new version (by Model types)")
+            gr.Markdown("### Check models' new version")
             with gr.Row():
-                model_types_ckbg = gr.CheckboxGroup(choices=model_types, label="Model Types",
-                                                    value=["ti", "hyper", "ckp", "lora"], show_label=False)
+                model_types_ckbg = gr.CheckboxGroup(
+                    choices=model_types,
+                    label="Model Types",
+                    value=["ti", "hyper", "ckp", "lora"],
+                    show_label=False)
                 check_models_new_version_btn = gr.Button(value="Check New Version from Civitai", variant="primary")
 
             check_models_new_version_log_md = gr.HTML("It takes time, just wait. Check console log for detail")
-
-        with gr.Box(elem_classes="ch_box"):
-            gr.Markdown("### Other")
-            # save_setting_btn = gr.Button(value="Save Setting")
-            gr.Markdown(value="Settings are moved into Settings Tab->Civitai Helper section")
 
         # ====Footer====
         gr.Markdown(f"<center>version:{util.version}</center>")
