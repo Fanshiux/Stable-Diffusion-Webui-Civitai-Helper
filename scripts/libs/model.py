@@ -17,9 +17,10 @@ folders = {
     "ckp": os.path.join(root_path, "models", "Stable-diffusion"),
     "lora": os.path.join(root_path, "models", "Lora")
 }
-
+preview_extensions = ["png", "jpg", "jpeg", "webp", "gif", "mp4"]
 exts = (".bin", ".pt", ".safetensors", ".ckpt")
 info_ext = ".info"
+conf_ext = ".json"
 vae_suffix = ".vae"
 
 
@@ -42,7 +43,7 @@ def get_custom_model_folder():
 
 # write model info to file
 def write_model_info(filepath, model_info):
-    util.printD("Write model info: " + util.shorten_path(filepath))
+    # util.printD("Write model info: " + util.shorten_path(filepath))
     with open(os.path.realpath(filepath), 'w') as f:
         f.write(json.dumps(model_info, indent=4))
 
@@ -105,7 +106,7 @@ def get_model_path_by_type_and_name(model_type: str, model_name: str):
     return
 
 
-# get model path by model type and search_term
+# get a model path by model type and search_term
 # parameter: model_type, search_term
 # return: model_path
 def get_model_path_by_search_term(model_type: str, search_term: str) -> str:
@@ -114,7 +115,7 @@ def get_model_path_by_search_term(model_type: str, search_term: str) -> str:
         util.printD("unknown model type: " + model_type)
         return
 
-    # for lora: search_term = subfolderpath + model name + ext + " " + hash. And it always start with a / even there is no sub folder
+    # For lora: search_term = subfolderpath + model name + ext + " " + hash. And it always starts with a / even there is no subfolder
     # for ckp: search_term = subfolderpath + model name + ext + "" + hash
     # for ti: search_term = subfolderpath + model name + ext + "" + hash
     # for hyper: search_term = subfolderpath + model name

@@ -15,7 +15,7 @@ def parse_js_msg(msg):
     msg_dict = json.loads(msg)
 
     # in case client side run 'JSON.stringify' twice
-    if type(msg_dict) == str:
+    if type(msg_dict) is str:
         msg_dict = json.loads(msg_dict)
 
     if "action" not in msg_dict.keys():
@@ -52,9 +52,7 @@ def build_py_msg(action: str, content: dict):
         util.printD("Unknown action: " + action)
         return
 
-    msg = {
+    return json.dumps({
         "action": action,
         "content": content
-    }
-
-    return json.dumps(msg)
+    })

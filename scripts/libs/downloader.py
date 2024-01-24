@@ -4,13 +4,29 @@ import time
 
 import os
 import requests
+import shutil
 from modules import shared
+from requests.adapters import HTTPAdapter, Retry
 from . import util
 
 dl_ext = ".downloading"
 
 # disable ssl warning info
 requests.packages.urllib3.disable_warnings()
+
+
+# output is downloaded file path
+def download(url, path):
+
+    # printD("Downloading: " + url)
+    r = util.request(url, verify=False, stream=True)
+
+    # write to file
+    with open(os.path.realpath(path), 'wb') as f:
+        r.raw.decode_content = True
+        shutil.copyfileobj(r.raw, f)
+
+    return path
 
 
 # output is downloaded file path
@@ -71,10 +87,9 @@ def dl(url, folder, filename=None, filepath=None):
                     terminal_size = os.get_terminal_size().columns - 8
                     ratio = downloaded_size / total_size
                     progress = int(100 * ratio)
-                    sys.stdout.write("\r%d%%|%s%s|\t%d MB" % (
+                    print("\r%d%%|%s%s|\t%d MB" % (
                         progress, '█' * int(ratio * terminal_size), ' ' * int((1 - ratio) * terminal_size),
                         download_speed))
-                    sys.stdout.flush()
                     time.sleep(1)
                 except Exception:
                     continue
@@ -82,6 +97,11 @@ def dl(url, folder, filename=None, filepath=None):
             util.printD(e)
     else:
         filename, total_size, cd = get_size_and_name(url)
+
+        if total_size < 0:
+            util.printD(
+                'This model requires an API key to download. More info: https://github.com/butaixianran/Stable-Diffusion-Webui-Civitai-Helper#civitai-api-key')
+            return
 
         if not filepath and not filename:
             util.printD("Fail to get file name from Content-Disposition: " + cd)
@@ -139,7 +159,7 @@ def dl(url, folder, filename=None, filepath=None):
         # rename file
         os.rename(dl_filepath, filepath)
 
-    util.printD(f"File save to: {filepath}")
+    util.printD(f"File saved: {filepath}")
     return filepath
 
 
@@ -162,7 +182,7 @@ def get_size_and_name(url):
     # first request for header
     r = util.request(url, stream=True)
     # get file size
-    total_size = int(r.headers['Content-Length'])
+    total_size = int(r.headers.get('Content-Length', -1))
     # headers default is decoded with latin1, so need to re-decode it with utf-8
     cd = r.headers["Content-Disposition"].encode('latin1').decode('utf-8', errors='ignore')
     server_filename = filename_from_content_disposition(cd)

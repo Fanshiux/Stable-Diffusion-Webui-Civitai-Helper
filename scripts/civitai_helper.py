@@ -2,11 +2,11 @@
 # This extension can help you manage your models from civitai. It can download preview, add trigger words, open model page and use the prompt from preview image
 # repo: https://github.com/butaixianran/
 
-from scripts.ch_lib import civitai
-from scripts.ch_lib import js_action_civitai
-from scripts.ch_lib import model
-from scripts.ch_lib import model_action_civitai
-from scripts.ch_lib import util
+from scripts.libs import civitai
+from scripts.libs import js_action
+from scripts.libs import model
+from scripts.libs import model_action
+from scripts.libs import util
 
 import gradio as gr
 import modules
@@ -67,6 +67,19 @@ def on_ui_settings():
             label="Civitai Base Url",
             component=gr.Textbox,
             component_args={"interactive": True, "lines": 1, "placeholder": "https://civitai.com"},
+            section=ch_section
+        )
+    )
+    shared.opts.add_option(
+        "ch_civitai_api_key",
+        shared.OptionInfo(
+            default="https://civitai.com",
+            label="Civitai API Key",
+            component=gr.Textbox,
+            component_args={
+                "interactive": True, "lines": 1,
+                "info": "check doc:https://github.com/civitai/civitai/wiki/REST-API-Reference#authorization"
+            },
             section=ch_section
         )
     )
@@ -140,35 +153,35 @@ def on_ui_tabs():
 
     # ====Event's function====
     def scan_model(scan_model_types):
-        return model_action_civitai.scan_model(scan_model_types, max_size_preview, skip_nsfw_preview)
+        return model_action.scan_model(scan_model_types, max_size_preview, skip_nsfw_preview)
 
     def get_model_info_by_input(model_type, model_name, model_url_or_id):
-        return model_action_civitai.get_model_info_by_input(
+        return model_action.get_model_info_by_input(
             model_type, model_name, model_url_or_id, max_size_preview, skip_nsfw_preview)
 
     def dl_model_by_input(model_info, model_type, subfolder_str, version_str, files, file_suffix, all_bool):
-        return model_action_civitai.dl_model_by_input(
+        return model_action.dl_model_by_input(
             model_info, model_type, subfolder_str, version_str, files, file_suffix, all_bool, max_size_preview,
             skip_nsfw_preview)
 
     # def check_models_new_version_to_md(
     #         dl_model_info, dl_model_type_txtbox, dl_subfolder_drop, dl_version_drop, dl_all_ckb):
-    #     return model_action_civitai.check_models_new_version_to_md(
+    #     return model_action.check_models_new_version_to_md(
     #         dl_model_info, dl_model_type_txtbox, dl_subfolder_drop, dl_version_drop, dl_all_ckb, max_size_preview,
     #         skip_nsfw_preview)
 
     def open_model_url(js_msg):
-        return js_action_civitai.open_model_url(js_msg, open_url_with_js)
+        return js_action.open_model_url(js_msg, open_url_with_js)
 
     def dl_model_new_version(js_msg):
-        return js_action_civitai.dl_model_new_version(js_msg, max_size_preview, skip_nsfw_preview)
+        return js_action.dl_model_new_version(js_msg, max_size_preview, skip_nsfw_preview)
 
     def get_model_names_by_input(model_type, empty_info_only):
         names = civitai.get_model_names_by_input(model_type, empty_info_only)
         return model_name_drop.update(choices=names)
 
     def get_model_info_by_url(url):
-        r = model_action_civitai.get_model_info_by_url(url)
+        r = model_action.get_model_info_by_url(url)
 
         model_info = {}
         model_name = ""
@@ -189,7 +202,7 @@ def on_ui_tabs():
                 dl_version_drop.update(choices=version_strs, value=version_strs[0])]
 
     def get_files_by_version_str(version_str, model_info):
-        file_strs = model_action_civitai.get_file_strs_by_version_str(version_str, model_info)
+        file_strs = model_action.get_file_strs_by_version_str(version_str, model_info)
         return dl_files_drop.update(choices=file_strs, value=[file_strs[0]] if len(file_strs) == 1 else [])
 
     def check_duplicate_files(file_strs, file_dir, model_type, model_info, version_str):
@@ -386,7 +399,7 @@ def on_ui_tabs():
 
         # Check models' new version
         check_models_new_version_btn.click(
-            fn=model_action_civitai.check_models_new_version_to_md,
+            fn=model_action.check_models_new_version_to_md,
             inputs=model_types_ckbg,
             outputs=check_models_new_version_log_md
         )
@@ -398,12 +411,12 @@ def on_ui_tabs():
             outputs=py_msg_txtbox
         )
         js_add_trigger_words_btn.click(
-            fn=js_action_civitai.add_trigger_words,
+            fn=js_action.add_trigger_words,
             inputs=[js_msg_txtbox],
             outputs=[txt2img_prompt, img2img_prompt]
         )
         js_use_preview_prompt_btn.click(
-            fn=js_action_civitai.use_preview_image_prompt,
+            fn=js_action.use_preview_image_prompt,
             inputs=[js_msg_txtbox],
             outputs=[txt2img_prompt, txt2img_neg_prompt, img2img_prompt, img2img_neg_prompt]
         )
@@ -413,7 +426,7 @@ def on_ui_tabs():
             outputs=dl_log_md
         )
         js_use_delete_model_btn.click(
-            fn=js_action_civitai.delete_model,
+            fn=js_action.delete_model,
             inputs=[js_msg_txtbox],
             outputs=[py_msg_txtbox]
         )

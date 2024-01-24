@@ -3,11 +3,10 @@ import hashlib
 import io
 import os
 import requests
-import shutil
 from modules import shared
 from requests import RequestException
+from requests.adapters import HTTPAdapter, Retry
 from urllib import parse
-from . import util
 
 def_headers = {
     'User-Agent': 'Mozilla/5.0 (iPad; CPU OS 12_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148'
@@ -40,24 +39,8 @@ def gen_file_sha256(filename):
             h.update(block)
 
     hash_value = h.hexdigest()
-    printD(f"sha256: {hash_value} [{util.hr_size(length)}]")
+    # printD(f"sha256: {hash_value} [{hr_size(length)}]")
     return hash_value
-
-
-# get preview image
-def download_file(url: str, path):
-    # get file
-    try:
-        r = request(url, stream=True, prefix=True, download_tip=True)
-    except RequestException:
-        return
-
-    # write to file
-    with open(os.path.realpath(path), 'wb') as f:
-        r.raw.decode_content = True
-        shutil.copyfileobj(r.raw, f)
-
-    printD("File saved: " + shorten_path(path))
 
 
 # get a subfolder list
@@ -102,10 +85,10 @@ def get_relative_path(item_path: str, parent_path: str) -> str:
 
 # get a relative path
 def shorten_path(filepath: str) -> str:
-    ei = filepath.find('embeddings' + os.sep)
+    idx = filepath.find('embeddings' + os.sep)
     mi = filepath.find("models" + os.sep)
-    if ei >= 0:
-        return filepath[ei:]
+    if idx >= 0:
+        return filepath[idx:]
     elif mi >= 0:
         return filepath[mi:]
     return filepath
@@ -127,38 +110,50 @@ def get_file_names_from_file_strs(file_strs: list) -> str:
 
 def get_url_from_base_url(url: str, prefix: bool = False) -> str:
     base_url = shared.opts.data.get("ch_base_url")
+    ch_civitai_api_key = shared.opts.data.get("ch_civitai_api_key")
+
     if base_url:
         if prefix:
             url = base_url if base_url[-1] == "/" else base_url + "/" + url
         else:
             url = parse.urljoin(base_url, parse.urlparse(url).path)
+
+    if ch_civitai_api_key:
+        url += "?token=" + ch_civitai_api_key
+
     return url
 
 
 # Request method
-def request(url: str, stream: bool = False, to_json: bool = False, download_tip: bool = False, prefix: bool = False):
+def request(url: str, to_json: bool = False, download_tip: bool = False, prefix: bool = False, **kwargs):
+    retry = Retry(connect=5, backoff_factor=0.5, status_forcelist=[429, 500, 502, 503, 504])
+    adapter = HTTPAdapter(max_retries=retry)
+    session = requests.Session()
+    session.mount('http://', adapter)
+    session.mount('https://', adapter)
+
     url = get_url_from_base_url(url, prefix)
     if download_tip:
         printD("Start downloading: " + url)
     try:
-        r = requests.get(url, stream=stream, headers=def_headers)
+        r = session.get(url, headers=def_headers, timeout=10, **kwargs)
         if not r.ok:
             if r.status_code == 404:
-                util.printD("The request cannot be obtained")
+                printD("The request cannot be obtained")
             else:
-                util.printD("Get error code: " + str(r.status_code))
-                util.printD(r.text)
+                printD("Get error code: " + str(r.status_code))
+                printD(r.text)
                 return
             raise RequestException()
         if to_json:
             try:
                 return r.json()
             except Exception as e:
-                util.printD("Parse response json failed")
-                util.printD(str(e))
-                util.printD("response:")
-                util.printD(r.text)
+                printD("Parse response json failed")
+                printD(str(e))
+                printD("response:")
+                printD(r.text)
                 raise RequestException()
         return r
     except RequestException as e:
-        util.printD(f"{url}: " + e)
+        printD(f"{url}: " + e)

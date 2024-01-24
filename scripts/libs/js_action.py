@@ -1,11 +1,12 @@
 # -*- coding: UTF-8 -*-
 # handle msg between js and python side
-
+import json
 import os
 import webbrowser
 from . import civitai
 from . import downloader
 from . import model
+from . import model_action
 from . import msg_handler
 from . import util
 
@@ -36,7 +37,8 @@ def open_model_url(msg, open_url_with_js):
         util.printD(f"model id from info file of {model_type} {search_term} is None")
         return ""
 
-    url = civitai.url_dict["modelPage"] + str(model_id)
+    model_version_id = model_info["id"]
+    url = civitai.url_dict["modelPage"] + str(model_id) + "?modelVersionId=" + str(model_version_id)
 
     output = ""
     if open_url_with_js:
@@ -228,7 +230,6 @@ def dl_model_new_version(msg, max_size_preview, skip_nsfw_preview):
 
 # delete model by model path
 def delete_model(msg):
-    output = ""
     result = msg_handler.parse_js_msg(msg)
     if not result:
         util.printD("Parsing js ms failed")
@@ -236,46 +237,5 @@ def delete_model(msg):
 
     model_type = result["model_type"]
     search_term = result["search_term"]
-
-    model_path = model.get_model_path_by_search_term(model_type, search_term)
-    if not model_path:
-        output = f"Fail to get model for {model_type} {search_term}"
-        util.printD(output)
-        return output
-
-    if not os.path.isfile(model_path):
-        output = f"Model {model_type} {search_term} does not exist, no need to remove"
-        util.printD(output)
-        return output
-
-    # all files need to be removed
-    related_paths = [model_path]
-
-    # get info file
-    base, ext = os.path.splitext(model_path)
-    info_path = base + model.info_ext
-    first_preview_path = base + ".png"
-    sec_preview_path = base + ".preview.png"
-    civitai_info_path = base + model.info_ext
-
-    if os.path.isfile(civitai_info_path):
-        related_paths.append(civitai_info_path)
-
-    if os.path.isfile(first_preview_path):
-        related_paths.append(first_preview_path)
-
-    if os.path.isfile(sec_preview_path):
-        related_paths.append(sec_preview_path)
-
-    if os.path.isfile(info_path):
-        related_paths.append(info_path)
-
-    # remove files
-    for rp in related_paths:
-        if os.path.isfile(rp):
-            util.printD(f"Removing file {rp}")
-            os.remove(rp)
-
-    util.printD(f"{len(related_paths)} file removed")
-
-    return output
+    result = model_action.delete_model_by_search_term(model_type, search_term)
+    return json.dumps({"result": result})

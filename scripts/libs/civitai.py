@@ -5,6 +5,7 @@ import time
 import os
 import re
 from requests import RequestException
+from . import downloader
 from . import model
 from . import util
 
@@ -272,7 +273,7 @@ def get_preview_image_by_model_path(model_path: str, max_size_preview, skip_nsfw
         if img_url:
             if max_size_preview and "width" in img_dict.keys():
                 img_url = get_full_size_image_url(img_url, img_dict["width"])
-            util.download_file(img_url, image_preview)
+            downloader.download(img_url, image_preview)
             # we only need one preview image
             break
 
@@ -319,8 +320,8 @@ def search_local_model_info_by_version_id(folder: str, version_id: int):
     return
 
 
-# check new version for a model by model path
-# return (model_path, model_id, model_name, new_verion_id, new_version_name, description, download_url, img_url)
+# check a new version for a model by model path
+# return (model_path, model_id, model_name, new_version_id, new_version_name, description, download_url, img_url)
 def check_model_new_version_by_path(model_path: str, delay: float = 2):
     if not model_path:
         util.printD("model_path is empty")

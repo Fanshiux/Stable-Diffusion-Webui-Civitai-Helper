@@ -1,7 +1,8 @@
 # -*- coding: UTF-8 -*-
 # handle msg between js and python side
-
+import glob
 import os
+from colorama import Fore
 from . import civitai
 from . import downloader
 from . import model
@@ -19,7 +20,7 @@ def scan_model(scan_model_types, max_size_preview, skip_nsfw_preview, delay=1):
 
     model_types = []
     # check a type if it is a string
-    if type(scan_model_types) == str:
+    if type(scan_model_types) is str:
         model_types.append(scan_model_types)
     else:
         model_types = scan_model_types
@@ -52,15 +53,15 @@ def scan_model(scan_model_types, max_size_preview, skip_nsfw_preview, delay=1):
                     if not os.path.isfile(info_file):
                         util.printD("Creating model info: " + util.shorten_path(filepath))
                         # get model's sha256
-                        hash = util.gen_file_sha256(filepath)
+                        sha256 = util.gen_file_sha256(filepath)
 
-                        if not hash:
+                        if not sha256:
                             output = "failed generating SHA256 for model:" + filename
                             util.printD(output)
                             return output
 
                         # use this sha256 to get model info from civitai
-                        model_info = civitai.get_model_info_by_hash(hash)
+                        model_info = civitai.get_model_info_by_hash(sha256)
                         # if model_type == "ti": time.sleep(delay)
 
                         if model_info is None:
@@ -80,7 +81,7 @@ def scan_model(scan_model_types, max_size_preview, skip_nsfw_preview, delay=1):
 
     # scan_log = "Done"
 
-    output = f"Done. Scanned {model_count} models, checked {image_count} images"
+    output = f"{Fore.LIGHTGREEN_EX}Done. Scanned {model_count} models, checked {image_count} images"
 
     util.printD(output)
 
@@ -149,7 +150,7 @@ def check_models_new_version_to_md(model_types: list) -> str:
     else:
         output = "Found new version for following models:  <br>"
         for new_version in new_versions:
-            count = count + 1
+            count += 1
             model_path, model_id, model_name, new_version_id, new_version_name, description, download_url, img_url = new_version
             # in md, each part is something like this:
             # [model_name](model_url)
@@ -158,29 +159,29 @@ def check_models_new_version_to_md(model_types: list) -> str:
             url = civitai.url_dict["modelPage"] + str(model_id)
 
             part = f'<div style="font-size:20px;margin:6px 0px;"><b>Model: <a href="{url}" target="_blank"><u>{model_name}</u></a></b></div>'
-            part = part + f'<div style="font-size:16px">File: {model_path}</div>'
+            part += f'<div style="font-size:16px">File: {model_path}</div>'
             if download_url:
                 # replace "\" to "/" in model_path for windows
                 model_path = model_path.replace('\\', '\\\\')
-                part = part + f'<div style="font-size:16px;margin:6px 0px;">New Version: <u><a href="{download_url}" target="_blank" style="margin:0px 10px;">{new_version_name}</a></u>'
+                part += f'<div style="font-size:16px;margin:6px 0px;">New Version: <u><a href="{download_url}" target="_blank" style="margin:0px 10px;">{new_version_name}</a></u>'
                 # add js function to download a new version into SD webui by python
-                part = part + "    "
+                part += "    "
                 # in embed HTML, onclick= will also follow a ", never a ', so have to write it as following
-                part = part + f"<u><a href='#' style='margin:0px 10px;' onclick=\"ch_dl_model_new_version(event, '{model_path}', '{new_version_id}', '{download_url}')\">[Download into SD]</a></u>"
+                part += f"<u><a href='#' style='margin:0px 10px;' onclick=\"ch_dl_model_new_version(event, '{model_path}', '{new_version_id}', '{download_url}')\">[Download into SD]</a></u>"
 
             else:
-                part = part + f'<div style="font-size:16px;margin:6px 0px;">New Version: {new_version_name}'
+                part += f'<div style="font-size:16px;margin:6px 0px;">New Version: {new_version_name}'
             part = part + '</div>'
 
             # description
             if description:
-                part = part + '<blockquote style="font-size:16px;margin:6px 0px;">' + description + '</blockquote><br>'
+                part += '<blockquote style="font-size:16px;margin:6px 0px;">' + description + '</blockquote><br>'
 
             # preview image            
             if img_url:
-                part = part + f"<img src='{img_url}'><br>"
+                part += f"<img src='{img_url}'><br>"
 
-            output = output + part
+            output += part
 
     util.printD(f"Done. Find {count} models have new version. Check UI for detail.")
 
@@ -574,3 +575,28 @@ def get_download_url_by_file_strs(file_strs: str, ver_info: dict, file_suffix: s
                 download_urls.append([file["downloadUrl"], file_name_spilt[0] + file_suffix + file_name_spilt[-1]])
 
     return download_urls
+
+
+# delete model file by model type and search_term
+# parameter: model_type, search_term
+# return: delete result
+def delete_model_by_search_term(model_type: str, search_term: str):
+    if model_type not in model.folders.keys():
+        util.printD(f"unknown model type: {model_type}")
+        return
+
+    # search_term = subfolder path + model name + ext. And it always start with a / even there is no sub folder
+    base_name, ext = os.path.splitext(search_term)
+    if base_name[0] == "/":
+        base_name = base_name[1:].replace("/", os.path.sep)
+
+    # find files with base_name
+    model_folder = model.folders[model_type]
+    path_prefix = os.path.join(model_folder, base_name) + ".*"
+
+    # del model preview image
+    for filepath in glob.glob(path_prefix):
+        os.remove(filepath)
+        util.printD(f"Deleted: {util.shorten_path(filepath)}")
+
+    return True
