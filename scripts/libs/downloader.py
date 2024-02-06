@@ -18,8 +18,7 @@ requests.packages.urllib3.disable_warnings()
 # output is downloaded file path
 def download(url, path):
 
-    # printD("Downloading: " + url)
-    r = util.request(url, verify=False, stream=True)
+    r = util.request(url, token=False, prefix=True, verify=False, stream=True)
 
     # write to file
     with open(os.path.realpath(path), 'wb') as f:
@@ -87,9 +86,9 @@ def dl(url, folder, filename=None, filepath=None):
                     terminal_size = os.get_terminal_size().columns - 8
                     ratio = downloaded_size / total_size
                     progress = int(100 * ratio)
-                    print("\r%d%%|%s%s|\t%d MB" % (
-                        progress, '█' * int(ratio * terminal_size), ' ' * int((1 - ratio) * terminal_size),
-                        download_speed))
+                    # print("\r%d%%|%s%s|\t%d MB" % (
+                    #     progress, '█' * int(ratio * terminal_size), ' ' * int((1 - ratio) * terminal_size),
+                    #     download_speed))
                     time.sleep(1)
                 except Exception:
                     continue

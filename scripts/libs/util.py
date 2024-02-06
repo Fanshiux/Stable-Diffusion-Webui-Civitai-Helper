@@ -108,7 +108,7 @@ def get_file_names_from_file_strs(file_strs: list) -> str:
     return ["_".join(file_str.split("_")[:-1]) for file_str in file_strs]
 
 
-def get_url_from_base_url(url: str, prefix: bool = False) -> str:
+def get_url_from_base_url(url: str, token: bool = True, prefix: bool = False) -> str:
     base_url = shared.opts.data.get("ch_base_url")
     ch_civitai_api_key = shared.opts.data.get("ch_civitai_api_key")
 
@@ -118,21 +118,21 @@ def get_url_from_base_url(url: str, prefix: bool = False) -> str:
         else:
             url = parse.urljoin(base_url, parse.urlparse(url).path)
 
-    if ch_civitai_api_key:
+    if ch_civitai_api_key and token:
         url += "?token=" + ch_civitai_api_key
 
     return url
 
 
 # Request method
-def request(url: str, to_json: bool = False, download_tip: bool = False, prefix: bool = False, **kwargs):
+def request(url: str, to_json: bool = False, download_tip: bool = False, prefix: bool = False, token: bool = True, **kwargs):
     retry = Retry(connect=5, backoff_factor=0.5, status_forcelist=[429, 500, 502, 503, 504])
     adapter = HTTPAdapter(max_retries=retry)
     session = requests.Session()
     session.mount('http://', adapter)
     session.mount('https://', adapter)
 
-    url = get_url_from_base_url(url, prefix)
+    url = get_url_from_base_url(url, token, prefix)
     if download_tip:
         printD("Start downloading: " + url)
     try:
