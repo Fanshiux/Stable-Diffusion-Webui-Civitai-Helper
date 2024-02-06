@@ -72,7 +72,7 @@ def dl(url, folder, filename=None, filepath=None):
                     print()
                     request = requests.post(aria2rpc_url, json=params).json()
                     result = request["result"]
-                    if "error" in request or result["status"] is "error":
+                    if "error" in request or result["status"] == "error":
                         filepath = result["files"][0]["path"]
                         util.printD(f"Oops! file downloading incomplete: {filepath}")
                         return
